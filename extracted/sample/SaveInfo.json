@@ -1,0 +1,71 @@
+{
+   "Active Party" : {
+      "Characters" : [
+         {
+            "Classes" : [
+               {
+                  "Main" : "Wizard",
+                  "Sub" : "EvocationSchool"
+               }
+            ],
+            "Experience Points (Current level)" : 2893,
+            "Experience Points (Total)" : 9393,
+            "Level" : 5,
+            "Origin" : "Generic",
+            "Position" : [ -175.23796081542969, 24.91894531250, 542.43536376953125 ],
+            "Race" : "Elf_HighElf",
+            "Subregion" : "PLA_MountainPass_SUB"
+         },
+         {
+            "Classes" : [
+               {
+                  "Main" : "Cleric",
+                  "Sub" : "TrickeryDomain"
+               }
+            ],
+            "Experience Points (Current level)" : 2893,
+            "Experience Points (Total)" : 9393,
+            "Level" : 5,
+            "Origin" : "Shadowheart",
+            "Position" : [ -173.99911499023438, 24.88574218750, 544.2968750 ],
+            "Race" : "HalfElf_High",
+            "Subregion" : "PLA_MountainPass_SUB"
+         },
+         {
+            "Classes" : [
+               {
+                  "Main" : "Fighter",
+                  "Sub" : "BattleMaster"
+               }
+            ],
+            "Experience Points (Current level)" : 2893,
+            "Experience Points (Total)" : 9393,
+            "Level" : 5,
+            "Origin" : "Laezel",
+            "Position" : [ -173.00605773925781, 24.92089843750, 542.57189941406250 ],
+            "Race" : "Githyanki",
+            "Subregion" : "PLA_MountainPass_SUB"
+         },
+         {
+            "Classes" : [
+               {
+                  "Main" : "Warlock",
+                  "Sub" : "Fiend"
+               }
+            ],
+            "Experience Points (Current level)" : 2893,
+            "Experience Points (Total)" : 9393,
+            "Level" : 5,
+            "Origin" : "Wyll",
+            "Position" : [ -171.750, 25.10058593750, 544.250 ],
+            "Race" : "Human",
+            "Subregion" : "PLA_MountainPass_SUB"
+         }
+      ]
+   },
+   "Current Level" : "WLD_Main_A",
+   "Difficulty" : [ "DifficultyEasy", "RulesetLarian" ],
+   "Game Version" : "4.1.1.6072089",
+   "Platform" : "Steam",
+   "Save Name" : "current"
+}
