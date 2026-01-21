@@ -18,9 +18,15 @@ impl ExtractState {
 
 /// Validates that a path doesn't contain path traversal patterns
 fn validate_path_safety(path: &str) -> Result<(), String> {
+    // Check for basic path traversal patterns
     if path.contains("..") || path.contains("../") || path.contains("..\\") {
         return Err("Invalid path: path traversal patterns are not allowed".to_string());
     }
+    
+    // Additional check: validate the path doesn't escape to unexpected locations
+    // For now, we rely on basic string checks since canonicalize requires the path to exist
+    // In production, consider more comprehensive path validation based on allowed directories
+    
     Ok(())
 }
 
@@ -93,14 +99,16 @@ pub async fn extract_save(
     }
 
     // Store the extraction path in state
-    *state.path.lock().unwrap() = Some(extract_path.clone());
+    *state.path.lock()
+        .map_err(|e| format!("Failed to acquire state lock: {}", e))? = Some(extract_path.clone());
 
     Ok(format!("Save extracted and converted to {}", extract_path_str))
 }
 
 #[tauri::command]
 pub async fn read_save_info(state: tauri::State<'_, ExtractState>) -> Result<serde_json::Value, String> {
-    let extract_path = state.path.lock().unwrap()
+    let extract_path = state.path.lock()
+        .map_err(|e| format!("Failed to acquire state lock: {}", e))?
         .as_ref()
         .ok_or("No save extracted yet")?
         .clone();
@@ -125,7 +133,8 @@ pub async fn read_save_info(state: tauri::State<'_, ExtractState>) -> Result<ser
 
 #[tauri::command]
 pub async fn get_gold_count(state: tauri::State<'_, ExtractState>) -> Result<save_model::SaveState, String> {
-    let extract_path = state.path.lock().unwrap()
+    let extract_path = state.path.lock()
+        .map_err(|e| format!("Failed to acquire state lock: {}", e))?
         .as_ref()
         .ok_or("No save extracted yet")?
         .clone();
@@ -158,7 +167,8 @@ pub async fn update_gold(
     new_gold: i32,
     state: tauri::State<'_, ExtractState>
 ) -> Result<String, String> {
-    let extract_path = state.path.lock().unwrap()
+    let extract_path = state.path.lock()
+        .map_err(|e| format!("Failed to acquire state lock: {}", e))?
         .as_ref()
         .ok_or("No save extracted yet")?
         .clone();
@@ -199,7 +209,8 @@ pub async fn repack_save(
     // Validate output path for security
     validate_path_safety(&output_path)?;
     
-    let extract_path = state.path.lock().unwrap()
+    let extract_path = state.path.lock()
+        .map_err(|e| format!("Failed to acquire state lock: {}", e))?
         .as_ref()
         .ok_or("No save extracted yet")?
         .clone();

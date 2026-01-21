@@ -148,7 +148,10 @@ pub fn update_gold_in_lsx(content: &str, new_amount: i32) -> Result<String, Stri
                     let absolute_val_idx = stack_idx + val_idx + 7;
                     let relative_val_end = part[absolute_val_idx..]
                         .find('"')
-                        .ok_or_else(|| "Malformed StackAmount value attribute".to_string())?;
+                        .ok_or_else(|| format!(
+                            "Malformed StackAmount value attribute: missing closing quote after position {}",
+                            absolute_val_idx
+                        ))?;
                     let after_value_idx = absolute_val_idx + relative_val_end;
                     
                     // Add content before the value

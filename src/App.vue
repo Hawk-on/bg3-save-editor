@@ -87,18 +87,19 @@ async function loadGold() {
 async function updateGoldValue() {
   if (!goldState.value) return;
   
-  // Validate input is an integer
-  if (!Number.isInteger(editedGold.value)) {
+  // Parse and validate input is an integer
+  const goldValue = Number(editedGold.value);
+  if (!Number.isInteger(goldValue)) {
     goldUpdateStatus.value = "❌ Gold amount must be a whole number (no decimals)";
     return;
   }
   
-  if (editedGold.value < 0) {
+  if (goldValue < 0) {
     goldUpdateStatus.value = "❌ Gold amount cannot be negative";
     return;
   }
   
-  if (editedGold.value > 999999999) {
+  if (goldValue > 999999999) {
     goldUpdateStatus.value = "❌ Gold amount is too large (max: 999,999,999)";
     return;
   }
@@ -107,7 +108,7 @@ async function updateGoldValue() {
   goldUpdateStatus.value = "Updating gold value...";
   
   try {
-    await invoke("update_gold", { newGold: editedGold.value });
+    await invoke("update_gold", { newGold: goldValue });
     goldUpdateStatus.value = "✅ Gold value updated in save data";
     // Reload to confirm
     await loadGold();
