@@ -134,3 +134,19 @@ pub async fn repack_save(output_path: String) -> Result<String, String> {
     
     Ok(format!("Save repacked successfully to {}", output_path))
 }
+
+#[tauri::command]
+pub fn create_backup(original_path: String) -> Result<String, String> {
+    let backup_path = format!("{}.backup", original_path);
+    
+    // Check if original exists
+    if !Path::new(&original_path).exists() {
+        return Err(format!("Original save file not found: {}", original_path));
+    }
+    
+    // Copy to backup
+    std::fs::copy(&original_path, &backup_path)
+        .map_err(|e| format!("Failed to create backup: {}", e))?;
+    
+    Ok(format!("Backup created: {}", backup_path))
+}

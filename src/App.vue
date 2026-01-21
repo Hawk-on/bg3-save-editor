@@ -47,6 +47,14 @@ async function extractSave() {
   try {
     const result = await invoke("extract_save", { savePath: savePath.value });
     extractionStatus.value = "✅ " + (result as string);
+    
+    // Auto-suggest output path
+    if (savePath.value.endsWith('.lsv')) {
+      outputPath.value = savePath.value.replace('.lsv', '_modified.lsv');
+    } else {
+      outputPath.value = savePath.value + '_modified.lsv';
+    }
+    
     await readInfo();
     await loadGold();
   } catch (e) {
@@ -76,6 +84,16 @@ async function loadGold() {
 
 async function updateGoldValue() {
   if (!goldState.value) return;
+  
+  if (editedGold.value < 0) {
+    saveStatus.value = "❌ Gold amount cannot be negative";
+    return;
+  }
+  
+  if (editedGold.value > 999999999) {
+    saveStatus.value = "❌ Gold amount is too large (max: 999,999,999)";
+    return;
+  }
   
   isSaving.value = true;
   saveStatus.value = "Updating gold value...";
@@ -110,6 +128,20 @@ async function exportSave() {
     isSaving.value = false;
   }
 }
+
+async function createBackup() {
+  if (!savePath.value) {
+    extractionStatus.value = "❌ Please specify a save path first";
+    return;
+  }
+  
+  try {
+    const result = await invoke("create_backup", { originalPath: savePath.value });
+    extractionStatus.value = "✅ " + result;
+  } catch (e) {
+    extractionStatus.value = "❌ Error creating backup: " + e;
+  }
+}
 </script>
 
 <template>
@@ -136,6 +168,9 @@ async function exportSave() {
         <h2>📂 Load Save File</h2>
         <div class="input-group">
           <input v-model="savePath" placeholder="Type absolute path to .lsv file" />
+          <button class="btn-secondary" @click="createBackup" title="Create a backup of the original save">
+            💾 Backup
+          </button>
           <button class="btn-primary" @click="extractSave" :disabled="isLoading">
             {{ isLoading ? 'Processing...' : 'Load & Extract' }}
           </button>
@@ -204,6 +239,9 @@ async function exportSave() {
       <!-- Export Section -->
       <section v-if="saveInfo" class="card export-card">
         <h2>💾 Export Modified Save</h2>
+        <p class="info-text">
+          📝 Your changes are ready to be exported. The modified save will be packed into a new .lsv file.
+        </p>
         <div class="input-group">
           <input 
             v-model="outputPath" 
@@ -218,7 +256,23 @@ async function exportSave() {
           </button>
         </div>
         <p class="status-text">{{ saveStatus }}</p>
-        <p class="hint">⚠️ Make sure to backup your original save file before using the modified one!</p>
+        <p class="hint">⚠️ Always backup your original save file before replacing it with the modified one!</p>
+      </section>
+
+      <!-- Help Section -->
+      <section class="card help-card">
+        <h3>ℹ️ How to Use</h3>
+        <ol class="help-list">
+          <li>Click "Check Tools" to verify LSLib is installed</li>
+          <li>Enter the path to your BG3 save file (.lsv)</li>
+          <li><strong>Optional:</strong> Click "Backup" to create a safety copy (.lsv.backup)</li>
+          <li>Click "Load & Extract" to read the save</li>
+          <li>Edit the gold value as desired</li>
+          <li>Click "Update Gold" to apply changes</li>
+          <li>Review the auto-suggested output path or change it</li>
+          <li>Click "Export Save" to create the modified save file</li>
+          <li>Copy the modified save to your BG3 saves folder to use it in-game</li>
+        </ol>
       </section>
     </main>
   </div>
@@ -420,5 +474,30 @@ button {
   text-align: center;
   color: #64748b;
   padding: 20px;
+}
+
+.help-card {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.help-list {
+  color: #cbd5e1;
+  line-height: 1.8;
+  padding-left: 20px;
+}
+
+.help-list li {
+  margin-bottom: 8px;
+}
+
+.help-list strong {
+  color: #60a5fa;
+}
+
+.info-text {
+  color: #94a3b8;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
 }
 </style>

@@ -20,7 +20,8 @@ pub fn run() {
             commands::read_save_info,
             commands::get_gold_count,
             commands::update_gold,
-            commands::repack_save
+            commands::repack_save,
+            commands::create_backup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
