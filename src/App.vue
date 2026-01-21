@@ -88,8 +88,8 @@ async function updateGoldValue() {
   if (!goldState.value) return;
   
   // Parse and validate input is an integer
-  const goldValue = Number(editedGold.value);
-  if (!Number.isInteger(goldValue)) {
+  const goldValue = parseInt(editedGold.value.toString(), 10);
+  if (isNaN(goldValue) || !Number.isInteger(goldValue)) {
     goldUpdateStatus.value = "❌ Gold amount must be a whole number (no decimals)";
     return;
   }

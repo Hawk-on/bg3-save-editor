@@ -166,7 +166,10 @@ pub fn update_gold_in_lsx(content: &str, new_amount: i32) -> Result<String, Stri
             }
             
             // If gold item doesn't have StackAmount, still count it but add as-is
-            // This is a known limitation
+            // Known limitation: Gold items without StackAmount attribute cannot be updated.
+            // This means their gold value will remain unchanged, which could lead to
+            // inconsistent total gold if such items exist. In practice, BG3 gold items
+            // typically have StackAmount, so this is a rare edge case.
             result.push_str(part);
             continue;
         }
