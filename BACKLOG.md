@@ -3,8 +3,8 @@
 ## Phase 1: Project Setup
 - [x] Create Tauri + Vue project structure
 - [x] Download LSLib (divine.exe)
-- [ ] Verify `divine.exe` integration via Rust
-- [ ] Implement Rust commands for extraction/repacking
+- [x] Verify `divine.exe` integration via Rust
+- [x] Implement Rust commands for extraction/repacking
 
 ## Phase 2: Save Extraction & Analysis
 - [x] Extract sample save file
@@ -24,7 +24,7 @@
 - [x] Backend: Save Parser (`save_model.rs`)
 - [x] Frontend: Save File Browser (Path Input Implemented)
 - [x] Frontend: Basic Stats Editor (Gold - View Only Implemented)
-- [ ] Backend: Save Logic (Edit -> Repack)
+- [x] Backend: Save Logic (Edit -> Repack)
 
 ## Phase 5: Verification & Polish
 - [ ] Verify edited save loads in game

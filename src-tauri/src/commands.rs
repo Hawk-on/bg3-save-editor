@@ -80,3 +80,57 @@ pub async fn get_gold_count() -> Result<save_model::SaveState, String> {
     let gold_info = save_model::get_gold_info(&content);
     Ok(gold_info)
 }
+
+#[tauri::command]
+pub fn verify_divine_integration() -> Result<String, String> {
+    bg3_io::verify_divine()
+}
+
+#[tauri::command]
+pub async fn update_gold(new_gold: i32) -> Result<String, String> {
+    let lsx_path = "extracted/temp_save/LevelCache/WLD_Main_A.lsx";
+    if !Path::new(lsx_path).exists() {
+        return Err("Level data not found (WLD_Main_A.lsx). Extract a save first.".to_string());
+    }
+
+    // Read current content
+    let content = std::fs::read_to_string(lsx_path).map_err(|e| e.to_string())?;
+    
+    // Update gold
+    let updated_content = save_model::update_gold_in_lsx(&content, new_gold)?;
+    
+    // Write back to file
+    std::fs::write(lsx_path, updated_content).map_err(|e| e.to_string())?;
+    
+    Ok(format!("Gold updated to {}", new_gold))
+}
+
+#[tauri::command]
+pub async fn repack_save(output_path: String) -> Result<String, String> {
+    let extract_path = "extracted/temp_save";
+    
+    if !Path::new(extract_path).exists() {
+        return Err("No extracted save found. Extract a save first.".to_string());
+    }
+    
+    // Convert LSX back to LSF
+    let level_lsx = format!("{}/LevelCache/WLD_Main_A.lsx", extract_path);
+    let level_lsf = format!("{}/LevelCache/WLD_Main_A.lsf", extract_path);
+    
+    if Path::new(&level_lsx).exists() {
+        bg3_io::convert_lsx_to_lsf(&level_lsx, &level_lsf)?;
+    }
+    
+    // Also convert Globals if it was converted
+    let globals_lsx = format!("{}/Globals.lsx", extract_path);
+    let globals_lsf = format!("{}/Globals.lsf", extract_path);
+    
+    if Path::new(&globals_lsx).exists() {
+        bg3_io::convert_lsx_to_lsf(&globals_lsx, &globals_lsf)?;
+    }
+    
+    // Repack into new .lsv file
+    bg3_io::repack_save(extract_path, &output_path)?;
+    
+    Ok(format!("Save repacked successfully to {}", output_path))
+}

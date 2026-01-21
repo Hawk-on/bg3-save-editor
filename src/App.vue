@@ -20,11 +20,18 @@ const extractionStatus = ref("");
 const saveInfo = ref<any>(null);
 const isLoading = ref(false);
 const goldState = ref<SaveState | null>(null);
+const editedGold = ref(0);
+const isSaving = ref(false);
+const saveStatus = ref("");
+const outputPath = ref("");
 
 // Actions
 async function checkLslib() {
   try {
     lslibStatus.value = await invoke("check_lslib_status");
+    // Also verify divine.exe integration
+    const divineStatus = await invoke("verify_divine_integration");
+    lslibStatus.value += " | " + divineStatus;
   } catch (e) {
     lslibStatus.value = "❌ Error: " + e;
   }
@@ -61,8 +68,46 @@ async function loadGold() {
   try {
     // This parses the 100MB file, might be slow
     goldState.value = await invoke("get_gold_count");
+    editedGold.value = goldState.value?.total_gold || 0;
   } catch (e) {
     console.error("Failed to load gold info", e);
+  }
+}
+
+async function updateGoldValue() {
+  if (!goldState.value) return;
+  
+  isSaving.value = true;
+  saveStatus.value = "Updating gold value...";
+  
+  try {
+    await invoke("update_gold", { newGold: editedGold.value });
+    saveStatus.value = "✅ Gold value updated in save data";
+    // Reload to confirm
+    await loadGold();
+  } catch (e) {
+    saveStatus.value = "❌ Error updating gold: " + e;
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function exportSave() {
+  if (!outputPath.value) {
+    saveStatus.value = "❌ Please specify an output path";
+    return;
+  }
+  
+  isSaving.value = true;
+  saveStatus.value = "Repacking save file...";
+  
+  try {
+    const result = await invoke("repack_save", { outputPath: outputPath.value });
+    saveStatus.value = "✅ " + result;
+  } catch (e) {
+    saveStatus.value = "❌ Error repacking save: " + e;
+  } finally {
+    isSaving.value = false;
   }
 }
 </script>
@@ -120,25 +165,61 @@ async function loadGold() {
           <h3>💰 Wealth Management</h3>
           <div v-if="goldState" class="gold-display">
              <div class="total-gold">
-               <span class="label">Total Gold</span>
+               <span class="label">Current Gold</span>
                <span class="value">{{ goldState.total_gold.toLocaleString() }}</span>
              </div>
              
+             <div class="gold-editor">
+               <label for="gold-input">Set New Gold Amount:</label>
+               <input 
+                 id="gold-input"
+                 type="number" 
+                 v-model.number="editedGold" 
+                 min="0"
+                 class="gold-input"
+               />
+               <button 
+                 class="btn-primary" 
+                 @click="updateGoldValue"
+                 :disabled="isSaving"
+               >
+                 {{ isSaving ? 'Updating...' : 'Update Gold' }}
+               </button>
+             </div>
+             
              <div class="items-list">
-               <h4>Sources Found:</h4>
+               <h4>Gold Items Found:</h4>
                <ul>
                  <li v-for="(item, idx) in goldState.items" :key="idx">
                    {{ item.name }}: <span class="gold-amount">{{ item.amount }}</span>
                  </li>
                </ul>
              </div>
-             
-             <p class="hint">Editing coming soon in Phase 4.b</p>
           </div>
           <div v-else-if="isLoading" class="loading-spinner">Analyzing wealth...</div>
           <div v-else class="placeholder">Load a save to view gold.</div>
         </section>
       </div>
+
+      <!-- Export Section -->
+      <section v-if="saveInfo" class="card export-card">
+        <h2>💾 Export Modified Save</h2>
+        <div class="input-group">
+          <input 
+            v-model="outputPath" 
+            placeholder="Output path (e.g., C:\path\to\modified_save.lsv)" 
+          />
+          <button 
+            class="btn-primary" 
+            @click="exportSave"
+            :disabled="isSaving || !outputPath"
+          >
+            {{ isSaving ? 'Exporting...' : 'Export Save' }}
+          </button>
+        </div>
+        <p class="status-text">{{ saveStatus }}</p>
+        <p class="hint">⚠️ Make sure to backup your original save file before using the modified one!</p>
+      </section>
     </main>
   </div>
 </template>
@@ -307,5 +388,37 @@ button {
   text-align: center;
   color: #64748b;
   margin-top: 12px;
+}
+
+.gold-editor {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.gold-editor label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.gold-input {
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.export-card {
+  border: 2px solid rgba(34, 197, 94, 0.3);
+}
+
+.placeholder {
+  text-align: center;
+  color: #64748b;
+  padding: 20px;
 }
 </style>

@@ -1,7 +1,4 @@
-// use std::path::Path; // unused
 use std::process::Command;
-// use tauri::api::path::resolve_path; // Error in V2
-// use tauri::Manager; // unused
 
 // Helper to get Divine.exe path. 
 // For dev env, it is relative to the workspace.
@@ -23,6 +20,34 @@ fn get_divine_path() -> String {
 
     // Fallback/Error
     "Divine.exe".to_string()
+}
+
+pub fn verify_divine() -> Result<String, String> {
+    let divine_exe = get_divine_path();
+    
+    // Check if file exists
+    let path = std::path::Path::new(&divine_exe);
+    if !path.exists() {
+        return Err(format!("Divine.exe not found at: {}", divine_exe));
+    }
+    
+    // Try to run it with --version or --help to verify it works
+    let output = Command::new(&divine_exe)
+        .arg("--version")
+        .output();
+    
+    match output {
+        Ok(out) => {
+            if out.status.success() {
+                let version = String::from_utf8_lossy(&out.stdout);
+                Ok(format!("Divine.exe verified at: {}\n{}", divine_exe, version))
+            } else {
+                // Some versions might not support --version, so just confirm it exists
+                Ok(format!("Divine.exe found at: {}", divine_exe))
+            }
+        }
+        Err(e) => Err(format!("Failed to execute Divine.exe: {}", e))
+    }
 }
 
 pub fn extract_save(pkg_path: &str, output_path: &str) -> Result<(), String> {
