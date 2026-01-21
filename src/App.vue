@@ -22,7 +22,8 @@ const isLoading = ref(false);
 const goldState = ref<SaveState | null>(null);
 const editedGold = ref(0);
 const isSaving = ref(false);
-const saveStatus = ref("");
+const goldUpdateStatus = ref("");
+const exportStatus = ref("");
 const outputPath = ref("");
 
 // Actions
@@ -48,9 +49,10 @@ async function extractSave() {
     const result = await invoke("extract_save", { savePath: savePath.value });
     extractionStatus.value = "✅ " + (result as string);
     
-    // Auto-suggest output path
-    if (savePath.value.endsWith('.lsv')) {
-      outputPath.value = savePath.value.replace('.lsv', '_modified.lsv');
+    // Auto-suggest output path using proper path manipulation
+    if (savePath.value.toLowerCase().endsWith('.lsv')) {
+      const basePath = savePath.value.slice(0, -4);
+      outputPath.value = basePath + '_modified.lsv';
     } else {
       outputPath.value = savePath.value + '_modified.lsv';
     }
@@ -85,26 +87,32 @@ async function loadGold() {
 async function updateGoldValue() {
   if (!goldState.value) return;
   
+  // Validate input is an integer
+  if (!Number.isInteger(editedGold.value)) {
+    goldUpdateStatus.value = "❌ Gold amount must be a whole number (no decimals)";
+    return;
+  }
+  
   if (editedGold.value < 0) {
-    saveStatus.value = "❌ Gold amount cannot be negative";
+    goldUpdateStatus.value = "❌ Gold amount cannot be negative";
     return;
   }
   
   if (editedGold.value > 999999999) {
-    saveStatus.value = "❌ Gold amount is too large (max: 999,999,999)";
+    goldUpdateStatus.value = "❌ Gold amount is too large (max: 999,999,999)";
     return;
   }
   
   isSaving.value = true;
-  saveStatus.value = "Updating gold value...";
+  goldUpdateStatus.value = "Updating gold value...";
   
   try {
     await invoke("update_gold", { newGold: editedGold.value });
-    saveStatus.value = "✅ Gold value updated in save data";
+    goldUpdateStatus.value = "✅ Gold value updated in save data";
     // Reload to confirm
     await loadGold();
   } catch (e) {
-    saveStatus.value = "❌ Error updating gold: " + e;
+    goldUpdateStatus.value = "❌ Error updating gold: " + e;
   } finally {
     isSaving.value = false;
   }
@@ -112,18 +120,18 @@ async function updateGoldValue() {
 
 async function exportSave() {
   if (!outputPath.value) {
-    saveStatus.value = "❌ Please specify an output path";
+    exportStatus.value = "❌ Please specify an output path";
     return;
   }
   
   isSaving.value = true;
-  saveStatus.value = "Repacking save file...";
+  exportStatus.value = "Repacking save file...";
   
   try {
     const result = await invoke("repack_save", { outputPath: outputPath.value });
-    saveStatus.value = "✅ " + result;
+    exportStatus.value = "✅ " + result;
   } catch (e) {
-    saveStatus.value = "❌ Error repacking save: " + e;
+    exportStatus.value = "❌ Error repacking save: " + e;
   } finally {
     isSaving.value = false;
   }
@@ -211,6 +219,8 @@ async function createBackup() {
                  type="number" 
                  v-model.number="editedGold" 
                  min="0"
+                 max="999999999"
+                 step="1"
                  class="gold-input"
                />
                <button 
@@ -220,6 +230,7 @@ async function createBackup() {
                >
                  {{ isSaving ? 'Updating...' : 'Update Gold' }}
                </button>
+               <p v-if="goldUpdateStatus" class="status-text">{{ goldUpdateStatus }}</p>
              </div>
              
              <div class="items-list">
@@ -255,7 +266,7 @@ async function createBackup() {
             {{ isSaving ? 'Exporting...' : 'Export Save' }}
           </button>
         </div>
-        <p class="status-text">{{ saveStatus }}</p>
+        <p class="status-text">{{ exportStatus }}</p>
         <p class="hint">⚠️ Always backup your original save file before replacing it with the modified one!</p>
       </section>
 
