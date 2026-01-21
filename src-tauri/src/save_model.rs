@@ -113,3 +113,78 @@ pub fn get_gold_info(content: &str) -> SaveState {
 pub fn parse_and_sum_gold(content: &str) -> i32 {
     get_gold_info(content).total_gold
 }
+
+pub fn update_gold_in_lsx(content: &str, new_amount: i32) -> Result<String, String> {
+    // This function updates all gold items to have a combined amount equal to new_amount
+    // Strategy: Find the first gold item and update its StackAmount, set others to 0
+    
+    let parts: Vec<&str> = content.split("<node id=\"Item\">").collect();
+    let mut result = String::new();
+    result.push_str(parts[0]); // Add the part before first item
+    
+    let mut gold_items_found = 0;
+    let mut gold_items_updated = 0;
+    
+    for part in parts.iter().skip(1) {
+        result.push_str("<node id=\"Item\">");
+        
+        // Check if this is a gold item
+        if part.contains("value=\"OBJ_Gold") {
+            gold_items_found += 1;
+            
+            // Update the StackAmount for this gold item
+            let amount_to_set = if gold_items_found == 1 {
+                // Set all gold to the first gold item
+                new_amount
+            } else {
+                // Set remaining gold items to 0
+                0
+            };
+            
+            // Find and replace StackAmount
+            if let Some(stack_idx) = part.find("id=\"StackAmount\"") {
+                // Find the value attribute
+                if let Some(val_idx) = part[stack_idx..].find("value=\"") {
+                    let absolute_val_idx = stack_idx + val_idx + 7;
+                    let relative_val_end = part[absolute_val_idx..]
+                        .find('"')
+                        .ok_or_else(|| format!(
+                            "Malformed StackAmount value attribute: missing closing quote after position {}",
+                            absolute_val_idx
+                        ))?;
+                    let after_value_idx = absolute_val_idx + relative_val_end;
+                    
+                    // Add content before the value
+                    result.push_str(&part[..absolute_val_idx]);
+                    // Add new value
+                    result.push_str(&amount_to_set.to_string());
+                    // Add content after the value
+                    result.push_str(&part[after_value_idx..]);
+                    gold_items_updated += 1;
+                    continue;
+                }
+            }
+            
+            // If gold item doesn't have StackAmount, still count it but add as-is
+            // Known limitation: Gold items without StackAmount attribute cannot be updated.
+            // This means their gold value will remain unchanged, which could lead to
+            // inconsistent total gold if such items exist. In practice, BG3 gold items
+            // typically have StackAmount, so this is a rare edge case.
+            result.push_str(part);
+            continue;
+        }
+        
+        // If not gold, add the part as-is
+        result.push_str(part);
+    }
+    
+    if gold_items_found == 0 {
+        return Err("No gold items found in save file to update".to_string());
+    }
+    
+    if gold_items_updated == 0 {
+        return Err("Gold items found but none had StackAmount attribute to update".to_string());
+    }
+    
+    Ok(result)
+}

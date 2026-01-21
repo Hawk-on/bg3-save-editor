@@ -20,11 +20,19 @@ const extractionStatus = ref("");
 const saveInfo = ref<any>(null);
 const isLoading = ref(false);
 const goldState = ref<SaveState | null>(null);
+const editedGold = ref(0);
+const isSaving = ref(false);
+const goldUpdateStatus = ref("");
+const exportStatus = ref("");
+const outputPath = ref("");
 
 // Actions
 async function checkLslib() {
   try {
     lslibStatus.value = await invoke("check_lslib_status");
+    // Also verify divine.exe integration
+    const divineStatus = await invoke("verify_divine_integration");
+    lslibStatus.value += " | " + divineStatus;
   } catch (e) {
     lslibStatus.value = "❌ Error: " + e;
   }
@@ -40,6 +48,15 @@ async function extractSave() {
   try {
     const result = await invoke("extract_save", { savePath: savePath.value });
     extractionStatus.value = "✅ " + (result as string);
+    
+    // Auto-suggest output path using proper path manipulation
+    if (savePath.value.toLowerCase().endsWith('.lsv')) {
+      const basePath = savePath.value.slice(0, -4);
+      outputPath.value = basePath + '_modified.lsv';
+    } else {
+      outputPath.value = savePath.value + '_modified.lsv';
+    }
+    
     await readInfo();
     await loadGold();
   } catch (e) {
@@ -61,8 +78,77 @@ async function loadGold() {
   try {
     // This parses the 100MB file, might be slow
     goldState.value = await invoke("get_gold_count");
+    editedGold.value = goldState.value?.total_gold || 0;
   } catch (e) {
     console.error("Failed to load gold info", e);
+  }
+}
+
+async function updateGoldValue() {
+  if (!goldState.value) return;
+  
+  // Parse and validate input is an integer
+  const goldValue = parseInt(editedGold.value.toString(), 10);
+  if (isNaN(goldValue) || !Number.isInteger(goldValue)) {
+    goldUpdateStatus.value = "❌ Gold amount must be a whole number (no decimals)";
+    return;
+  }
+  
+  if (goldValue < 0) {
+    goldUpdateStatus.value = "❌ Gold amount cannot be negative";
+    return;
+  }
+  
+  if (goldValue > 999999999) {
+    goldUpdateStatus.value = "❌ Gold amount is too large (max: 999,999,999)";
+    return;
+  }
+  
+  isSaving.value = true;
+  goldUpdateStatus.value = "Updating gold value...";
+  
+  try {
+    await invoke("update_gold", { newGold: goldValue });
+    goldUpdateStatus.value = "✅ Gold value updated in save data";
+    // Reload to confirm
+    await loadGold();
+  } catch (e) {
+    goldUpdateStatus.value = "❌ Error updating gold: " + e;
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function exportSave() {
+  if (!outputPath.value) {
+    exportStatus.value = "❌ Please specify an output path";
+    return;
+  }
+  
+  isSaving.value = true;
+  exportStatus.value = "Repacking save file...";
+  
+  try {
+    const result = await invoke("repack_save", { outputPath: outputPath.value });
+    exportStatus.value = "✅ " + result;
+  } catch (e) {
+    exportStatus.value = "❌ Error repacking save: " + e;
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function createBackup() {
+  if (!savePath.value) {
+    extractionStatus.value = "❌ Please specify a save path first";
+    return;
+  }
+  
+  try {
+    const result = await invoke("create_backup", { originalPath: savePath.value });
+    extractionStatus.value = "✅ " + result;
+  } catch (e) {
+    extractionStatus.value = "❌ Error creating backup: " + e;
   }
 }
 </script>
@@ -91,6 +177,9 @@ async function loadGold() {
         <h2>📂 Load Save File</h2>
         <div class="input-group">
           <input v-model="savePath" placeholder="Type absolute path to .lsv file" />
+          <button class="btn-secondary" @click="createBackup" title="Create a backup of the original save">
+            💾 Backup
+          </button>
           <button class="btn-primary" @click="extractSave" :disabled="isLoading">
             {{ isLoading ? 'Processing...' : 'Load & Extract' }}
           </button>
@@ -120,25 +209,83 @@ async function loadGold() {
           <h3>💰 Wealth Management</h3>
           <div v-if="goldState" class="gold-display">
              <div class="total-gold">
-               <span class="label">Total Gold</span>
+               <span class="label">Current Gold</span>
                <span class="value">{{ goldState.total_gold.toLocaleString() }}</span>
              </div>
              
+             <div class="gold-editor">
+               <label for="gold-input">Set New Gold Amount:</label>
+               <input 
+                 id="gold-input"
+                 type="number" 
+                 v-model.number="editedGold" 
+                 min="0"
+                 max="999999999"
+                 step="1"
+                 class="gold-input"
+               />
+               <button 
+                 class="btn-primary" 
+                 @click="updateGoldValue"
+                 :disabled="isSaving"
+               >
+                 {{ isSaving ? 'Updating...' : 'Update Gold' }}
+               </button>
+               <p v-if="goldUpdateStatus" class="status-text">{{ goldUpdateStatus }}</p>
+             </div>
+             
              <div class="items-list">
-               <h4>Sources Found:</h4>
+               <h4>Gold Items Found:</h4>
                <ul>
                  <li v-for="(item, idx) in goldState.items" :key="idx">
                    {{ item.name }}: <span class="gold-amount">{{ item.amount }}</span>
                  </li>
                </ul>
              </div>
-             
-             <p class="hint">Editing coming soon in Phase 4.b</p>
           </div>
           <div v-else-if="isLoading" class="loading-spinner">Analyzing wealth...</div>
           <div v-else class="placeholder">Load a save to view gold.</div>
         </section>
       </div>
+
+      <!-- Export Section -->
+      <section v-if="saveInfo" class="card export-card">
+        <h2>💾 Export Modified Save</h2>
+        <p class="info-text">
+          📝 Your changes are ready to be exported. The modified save will be packed into a new .lsv file.
+        </p>
+        <div class="input-group">
+          <input 
+            v-model="outputPath" 
+            placeholder="Output path (e.g., C:\path\to\modified_save.lsv)" 
+          />
+          <button 
+            class="btn-primary" 
+            @click="exportSave"
+            :disabled="isSaving || !outputPath"
+          >
+            {{ isSaving ? 'Exporting...' : 'Export Save' }}
+          </button>
+        </div>
+        <p class="status-text">{{ exportStatus }}</p>
+        <p class="hint">⚠️ Always backup your original save file before replacing it with the modified one!</p>
+      </section>
+
+      <!-- Help Section -->
+      <section class="card help-card">
+        <h3>ℹ️ How to Use</h3>
+        <ol class="help-list">
+          <li>Click "Check Tools" to verify LSLib is installed</li>
+          <li>Enter the path to your BG3 save file (.lsv)</li>
+          <li><strong>Optional:</strong> Click "Backup" to create a safety copy (.lsv.backup)</li>
+          <li>Click "Load & Extract" to read the save</li>
+          <li>Edit the gold value as desired</li>
+          <li>Click "Update Gold" to apply changes</li>
+          <li>Review the auto-suggested output path or change it</li>
+          <li>Click "Export Save" to create the modified save file</li>
+          <li>Copy the modified save to your BG3 saves folder to use it in-game</li>
+        </ol>
+      </section>
     </main>
   </div>
 </template>
@@ -307,5 +454,62 @@ button {
   text-align: center;
   color: #64748b;
   margin-top: 12px;
+}
+
+.gold-editor {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.gold-editor label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.gold-input {
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.export-card {
+  border: 2px solid rgba(34, 197, 94, 0.3);
+}
+
+.placeholder {
+  text-align: center;
+  color: #64748b;
+  padding: 20px;
+}
+
+.help-card {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.help-list {
+  color: #cbd5e1;
+  line-height: 1.8;
+  padding-left: 20px;
+}
+
+.help-list li {
+  margin-bottom: 8px;
+}
+
+.help-list strong {
+  color: #60a5fa;
+}
+
+.info-text {
+  color: #94a3b8;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
 }
 </style>

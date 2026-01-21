@@ -12,12 +12,17 @@ mod save_model;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(commands::ExtractState::new())
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::check_lslib_status,
+            commands::verify_divine_integration,
             commands::extract_save,
             commands::read_save_info,
-            commands::get_gold_count
+            commands::get_gold_count,
+            commands::update_gold,
+            commands::repack_save,
+            commands::create_backup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
