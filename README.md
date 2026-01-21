@@ -1,7 +1,22 @@
-# Tauri + Vanilla TS
+# BG3 Save Editor
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
+A cross-platform save game editor for Baldur's Gate 3, built with Tauri, Vue.js, and LSLib.
 
-## Recommended IDE Setup
+## Features
+- **Modern UI**: Clean, responsive interface built with Vue 3.
+- **Save Parsing**: Extracts and parses Larian Save Packages (.lsv) using `divine.exe`.
+- **Game Data Inspection**: View raw extracted data (JSON/XML).
+- **Extensible**: Designed to support more features via `Backlog`.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Setup
+1. Clone the repository.
+2. Run `npm install` to install dependencies.
+3. Run `npm run tauri dev` to start the development app.
+
+## Documentation
+- [Project Backlog](BACKLOG.md)
+- [Field Mapping (Save Structure)](FIELD_MAPPING.md)
+- [Viability Analysis](VIABILITY_ANALYSIS.md)
+
+## License
+MIT
