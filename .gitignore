@@ -22,5 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-extracted/
+
+extracted/
+extracted
+src-tauri/target/
+src-tauri/target
 sample_save.lsv

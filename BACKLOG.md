@@ -1,41 +1,32 @@
-# Project Backlog & Roadmap
+# BG3 Save Game Editor - Task List
 
-This document serves as a central repository for planned features, known issues, and future ideas for the BG3 Save Editor. It is intended for developers and LLMs to understand the future direction of the project.
+## Phase 1: Project Setup
+- [x] Create Tauri + Vue project structure
+- [x] Download LSLib (divine.exe)
+- [ ] Verify `divine.exe` integration via Rust
+- [ ] Implement Rust commands for extraction/repacking
 
-## 🚀 Roadmap
+## Phase 2: Save Extraction & Analysis
+- [x] Extract sample save file
+- [x] Convert LSF files to readable LSX format
+- [x] Analyze `Globals.lsx` for Character stats
+- [x] Analyze `WLD_Main_A.lsx` for Entity data
+- [x] Document key fields in `FIELD_MAPPING.md`
 
-### Phase 1: MVP (Current)
-- [x] Project Setup (Tauri + Vue + LSLib)
-- [x] Save Extraction & Repacking
-- [ ] Basic Stat Editing (Gold, XP)
-- [ ] Backup System
+## Phase 3: Field Research
+- [x] Locate Gold value (Confirmed `OBJ_GoldPile` / `StackAmount`)
+- [ ] Locate Experience/Level values (Deferred - Read-only from `SaveInfo` for now)
+- [ ] Locate Ability Scores (Deferred)
+- [ ] Locate Inventory items (Deferred)
 
-### Phase 2: Enhanced Editing
-- [ ] **Ability Score Editor**: Edit Str, Dex, Con, Int, Wis, Cha.
-- [ ] **Inventory Manager**: Add/Remove items, change quantities.
-- [ ] **Party Management**: Edit approval ratings, revive dead characters.
+## Phase 4: Core Implementation
+- [x] Backend: LSLib Wrapper (`bg3_io.rs`)
+- [x] Backend: Save Parser (`save_model.rs`)
+- [x] Frontend: Save File Browser (Path Input Implemented)
+- [x] Frontend: Basic Stats Editor (Gold - View Only Implemented)
+- [ ] Backend: Save Logic (Edit -> Repack)
 
-### Phase 3: Advanced Features
-- [ ] **Quest Editor**: View and toggle quest flags (Requires database of flags).
-- [ ] **Class & Race Respec**: Change character class/subclass and race (High complexity).
-- [ ] **Appearance Editor**: Modify hairstyle, colors, etc.
-- [ ] **Mod Support**: Better handling of modded save data.
-
-## 💡 Ideas & Future Improvements
-- **Performance**: Optimizing `Globals.lsx` parsing (currently ~29MB XML). Consider using stream-based parsing or LSLib's direct manipulation if possible via C# backend.
-- **UI/UX**: visual representation of inventory (icons).
-- **Auto-Backups**: Implement a retention policy (e.g., keep last 5 backups).
-- **Diff Tool**: Compare two save files to see what changed.
-
-## 🐛 Known Issues & Limitations
-- **Large File Size**: `WLD_Main_A.lsx` can be 90MB+. Text-based parsing is slow.
-- **LSLib Dependency**: Relies on `divine.exe`. Updates to the game may break LSLib compatibility.
-
-## 🤖 LLM Context
-For LLMs assisting with this project:
-- **Architecture**: Tauri (Rust) + Vue (TypeScript).
-- **Core Tool**: LSLib (`divine.exe`) is used for all file operations (extract/repack/convert).
-- **Key Files**:
-    - `Globals.lsx`: Game variables, some inventory/items (if global).
-    - `WLD_Main_A.lsx`: Main level character data, entities, local inventory.
-    - `SaveInfo.json`: High-level metadata (Party level, location).
+## Phase 5: Verification & Polish
+- [ ] Verify edited save loads in game
+- [ ] Test backup restoration
+- [ ] Polish UI
