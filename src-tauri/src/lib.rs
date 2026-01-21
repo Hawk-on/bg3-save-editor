@@ -5,6 +5,8 @@ fn greet(name: &str) -> String {
 }
 
 mod commands;
+mod bg3_io;
+mod save_model;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,7 +16,8 @@ pub fn run() {
             greet,
             commands::check_lslib_status,
             commands::extract_save,
-            commands::read_save_info
+            commands::read_save_info,
+            commands::get_gold_count
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
