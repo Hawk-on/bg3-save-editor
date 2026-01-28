@@ -1,9 +1,10 @@
 import { ref } from "vue";
 import { useInvokeCommand } from "./useApi";
 
-export function useLsLib() {
-  const lslibStatus = ref("");
+// Shared state (singleton pattern)
+const lslibStatus = ref("");
 
+export function useLsLib() {
   /**
    * Check if LSLib tools are installed and accessible
    */

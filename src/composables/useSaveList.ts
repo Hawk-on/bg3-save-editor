@@ -8,12 +8,14 @@ export interface SaveEntry {
   modified: string;
 }
 
+// Shared state (singleton pattern)
+const savesFolder = ref("%LOCALAPPDATA%\\Larian Studios\\Baldur's Gate 3\\PlayerProfiles\\Public\\Savegames\\Story");
+const availableSaves = ref<SaveEntry[]>([]);
+const selectedSave = ref("");
+const extractionStatus = ref("");
+const isLoading = ref(false);
+
 export function useSaveList() {
-  const savesFolder = ref("%LOCALAPPDATA%\\Larian Studios\\Baldur's Gate 3\\PlayerProfiles\\Public\\Savegames\\Story");
-  const availableSaves = ref<SaveEntry[]>([]);
-  const selectedSave = ref("");
-  const extractionStatus = ref("");
-  const isLoading = ref(false);
 
   const hasAvailableSaves = computed(() => availableSaves.value.length > 0);
 

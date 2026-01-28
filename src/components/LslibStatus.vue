@@ -19,9 +19,6 @@
 import { useLsLib } from "../composables/useLsLib";
 
 const { lslibStatus: status, checkLslib } = useLsLib();
-
-// Check on mount
-checkLslib();
 </script>
 
 <style scoped>

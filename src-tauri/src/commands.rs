@@ -180,15 +180,37 @@ pub async fn read_save_info() -> Result<serde_json::Value, String> {
 #[tauri::command]
 pub async fn get_gold_count() -> Result<save_model::SaveState, String> {
     let extract_path = get_temp_save_path()?;
-    let lsx_path = extract_path.join("LevelCache/WLD_Main_A.lsx");
     
-    if !lsx_path.exists() {
-        return Err("Level data not found (WLD_Main_A.lsx).".to_string());
+    // Check both Globals.lsx and WLD_Main_A.lsx for gold
+    let globals_path = extract_path.join("Globals.lsx");
+    let level_path = extract_path.join("LevelCache/WLD_Main_A.lsx");
+    
+    let mut combined_state = save_model::SaveState {
+        total_gold: 0,
+        items: Vec::new(),
+    };
+    
+    // Read Globals.lsx
+    if globals_path.exists() {
+        let content = std::fs::read_to_string(&globals_path).map_err(|e| e.to_string())?;
+        let globals_state = save_model::get_gold_info(&content);
+        combined_state.total_gold += globals_state.total_gold;
+        combined_state.items.extend(globals_state.items);
     }
-
-    // Read content (File can be large 100MB+)
-    let content = std::fs::read_to_string(lsx_path).map_err(|e| e.to_string())?;
-    Ok(save_model::get_gold_info(&content))
+    
+    // Read WLD_Main_A.lsx
+    if level_path.exists() {
+        let content = std::fs::read_to_string(&level_path).map_err(|e| e.to_string())?;
+        let level_state = save_model::get_gold_info(&content);
+        combined_state.total_gold += level_state.total_gold;
+        combined_state.items.extend(level_state.items);
+    }
+    
+    if !globals_path.exists() && !level_path.exists() {
+        return Err("Save data not found. Extract a save first.".to_string());
+    }
+    
+    Ok(combined_state)
 }
 
 #[tauri::command]
@@ -205,9 +227,9 @@ pub async fn modify_and_save_gold(new_gold: i32) -> Result<String, String> {
     let backup_path = bg3_io::backup_save(&source_save_path)?;
     
     // Read and modify the LSX file
-    let lsx_path = extract_path.join("LevelCache/WLD_Main_A.lsx");
+    let lsx_path = extract_path.join("Globals.lsx");
     if !lsx_path.exists() {
-        return Err("Level data not found (WLD_Main_A.lsx). Extract a save first.".to_string());
+        return Err("Globals data not found (Globals.lsx). Extract a save first.".to_string());
     }
     
     let content = std::fs::read_to_string(&lsx_path).map_err(|e| e.to_string())?;
@@ -216,11 +238,11 @@ pub async fn modify_and_save_gold(new_gold: i32) -> Result<String, String> {
     // Write modified LSX back
     std::fs::write(&lsx_path, modified_content).map_err(|e| e.to_string())?;
     
-    // Convert LSX back to LSF
-    let lsf_path = extract_path.join("LevelCache/WLD_Main_A.lsf");
+    // Convert LSX back to LSF for both Globals and Level
+    let globals_lsf = extract_path.join("Globals.lsf");
     bg3_io::convert_lsx_to_lsf(
         &lsx_path.to_string_lossy().to_string(),
-        &lsf_path.to_string_lossy().to_string()
+        &globals_lsf.to_string_lossy().to_string()
     )?;
     
     // Repack the save

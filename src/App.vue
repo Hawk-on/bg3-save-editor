@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, provide } from "vue";
+import { ref, onMounted } from "vue";
 import { useLsLib } from "./composables/useLsLib";
 import { useSaveList } from "./composables/useSaveList";
 import { useSaveExtraction } from "./composables/useSaveExtraction";
@@ -12,12 +12,8 @@ import GoldEditor from "./components/GoldEditor.vue";
 // ============================================================================
 // Compose Injected Composables
 // ============================================================================
-const { checkLslib: checkLslibOnMount } = useLsLib();
-const {
-  selectedSave: selectedSavePath,
-  isLoading,
-  loadSavesList: loadSavesListOnMount
-} = useSaveList();
+const { checkLslib } = useLsLib();
+const { loadSavesList, selectedSave: selectedSavePath } = useSaveList();
 const {
   saveInfo,
   extractSave,
@@ -28,9 +24,6 @@ const {
   loadGoldInfo,
   reset: resetGoldEditor
 } = useGoldEditor();
-
-// Provide saveInfo to child components
-provide("saveInfo", saveInfo);
 
 // ============================================================================
 // Component References for Imperative Updates
@@ -74,8 +67,8 @@ async function handleGoldSaved(newSavePath: string) {
 // ============================================================================
 
 onMounted(async () => {
-  await checkLslibOnMount();
-  await loadSavesListOnMount();
+  await checkLslib();
+  await loadSavesList();
 });
 </script>
 

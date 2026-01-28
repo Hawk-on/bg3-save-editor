@@ -1,9 +1,10 @@
 import { ref } from "vue";
 import { useInvokeCommand } from "./useApi";
 
-export function useSaveExtraction() {
-  const saveInfo = ref<any>(null);
+// Shared state (singleton pattern)
+const saveInfo = ref<any>(null);
 
+export function useSaveExtraction() {
   /**
    * Extract and convert save file to editable format
    */

@@ -17,9 +17,9 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from "vue";
+import { useSaveExtraction } from "../composables/useSaveExtraction";
 
-const saveInfo = inject<any>("saveInfo", null);
+const { saveInfo } = useSaveExtraction();
 </script>
 
 <style scoped>

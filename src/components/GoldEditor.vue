@@ -51,7 +51,6 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from "vue";
 import { useGoldEditor } from "../composables/useGoldEditor";
 
 const {
@@ -65,8 +64,6 @@ const {
   cancelEditing,
   saveGoldChanges
 } = useGoldEditor();
-
-const saveInfo = inject<any>("saveInfo", null);
 
 const emit = defineEmits<{
   "gold-saved": [newSavePath: string];

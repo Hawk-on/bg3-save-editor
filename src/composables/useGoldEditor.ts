@@ -11,12 +11,14 @@ export interface SaveState {
   items: GoldItemDisplay[];
 }
 
+// Shared state (singleton pattern)
+const goldState = ref<SaveState | null>(null);
+const isEditing = ref(false);
+const editedGold = ref(0);
+const saveStatus = ref("");
+const isLoading = ref(false);
+
 export function useGoldEditor() {
-  const goldState = ref<SaveState | null>(null);
-  const isEditing = ref(false);
-  const editedGold = ref(0);
-  const saveStatus = ref("");
-  const isLoading = ref(false);
 
   const isGoldLoaded = computed(() => goldState.value !== null);
   const hasChangedGold = computed(() => 

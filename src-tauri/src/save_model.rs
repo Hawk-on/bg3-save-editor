@@ -56,15 +56,15 @@ pub fn get_gold_info(content: &str) -> SaveState {
     let mut debug_file = std::fs::File::create("C:\\Git\\BG3 savegame editor\\gold_debug.txt").ok();
     if let Some(ref mut f) = debug_file {
         use std::io::Write;
-        let _ = writeln!(f, "\nDEBUG: Searching for gold in InventoryList nodes\n");
+        let _ = writeln!(f, "\nDEBUG: Searching for gold in ItemList nodes\n");
     }
     
-    // Find all InventoryList sections
-    let inventory_parts: Vec<&str> = content.split("<node id=\"InventoryList\">").collect();
+    // Find all ItemList sections
+    let inventory_parts: Vec<&str> = content.split("<node id=\"ItemList\">").collect();
     
     if let Some(ref mut f) = debug_file {
         use std::io::Write;
-        let _ = writeln!(f, "Found {} InventoryList sections\n", inventory_parts.len());
+        let _ = writeln!(f, "Found {} ItemList sections\n", inventory_parts.len());
     }
     
     // Process each inventory section (skip the part before the first InventoryList)
