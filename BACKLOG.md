@@ -1,12 +1,12 @@
 # BG3 Save Game Editor - Task List
 
-## Phase 1: Project Setup
+## Phase 1: Project Setup ✅
 - [x] Create Tauri + Vue project structure
 - [x] Download LSLib (divine.exe)
 - [x] Verify `divine.exe` integration via Rust
 - [x] Implement Rust commands for extraction/repacking
 
-## Phase 2: Save Extraction & Analysis
+## Phase 2: Save Extraction & Analysis ✅
 - [x] Extract sample save file
 - [x] Convert LSF files to readable LSX format
 - [x] Analyze `Globals.lsx` for Character stats
