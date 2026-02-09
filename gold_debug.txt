@@ -1,30 +1,8 @@
 
 DEBUG: Searching for gold in ItemList nodes
 
-Found 7 ItemList sections
+Found 1 ItemList sections
 
 
-=== GOLD ITEM #1 ===
-
-
-											<attribute id="ScoreModifier" type="float" value="1" />
-											<attribute id="StartRound" type="int32" value="0" />
-											<attribute id="FallbackStartRound" type="int32" value="-1" />
-											<attribute id="MinimumImpact" type="int32" value="0" />
-											<attribute id="OnlyCastOnSelf" type="bool" value="False" />
-											<attribute id="AIFlags" type="uint16" value="0" />
-											<attribute id="ItemName" type="LSString" value="LOOT_Gold_A" />
-											<attribute id="LevelName" type="LSString" value="" />
-											<attribute id="UUID" type="FixedString" value="" />
-											<attribute id="TemplateID" type="FixedString" value="1c3c9c74-34a1-4685-989e-410dc080be6f" />
-											<attribute id="Amount" type="int32" value="5" />
-											<attribute id="IsTradable" type="uint8" value="0" />
-											<attribute id="Type" type="uint8" value="1" />
-											<attribute id="CanBePickpocketed" type="bool" value="True" />
-											<attri
-
-Amount: 5, Name: LOOT_Gold_A
-
-
-TOTAL GOLD FOUND: 5 (across 1 items)
+TOTAL GOLD FOUND: 0 (across 0 items)
 

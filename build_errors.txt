@@ -1,0 +1,25 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(26,32): error CS1729: 'PackageReader' does not contain a constructor that takes 1 arguments [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(26,9): error CS1674: 'PackageReader': type used in a using statement must implement 'System.IDisposable'. [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(27,30): error CS7036: There is no argument given that corresponds to the required parameter 'path' of 'PackageReader.Read(string, bool)' [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(63,32): error CS1729: 'PackageReader' does not contain a constructor that takes 1 arguments [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(63,9): error CS1674: 'PackageReader': type used in a using statement must implement 'System.IDisposable'. [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(64,30): error CS7036: There is no argument given that corresponds to the required parameter 'path' of 'PackageReader.Read(string, bool)' [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(164,25): error CS0019: Operator '??' cannot be applied to operands of type 'int' and 'int' [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(13,28): warning CS0169: The field 'SaveService._packageReader' is never used [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+
+Build FAILED.
+
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(13,28): warning CS0169: The field 'SaveService._packageReader' is never used [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(26,32): error CS1729: 'PackageReader' does not contain a constructor that takes 1 arguments [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(26,9): error CS1674: 'PackageReader': type used in a using statement must implement 'System.IDisposable'. [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(27,30): error CS7036: There is no argument given that corresponds to the required parameter 'path' of 'PackageReader.Read(string, bool)' [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(63,32): error CS1729: 'PackageReader' does not contain a constructor that takes 1 arguments [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(63,9): error CS1674: 'PackageReader': type used in a using statement must implement 'System.IDisposable'. [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(64,30): error CS7036: There is no argument given that corresponds to the required parameter 'path' of 'PackageReader.Read(string, bool)' [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\Services\SaveService.cs(164,25): error CS0019: Operator '??' cannot be applied to operands of type 'int' and 'int' [C:\Git\BG3 savegame editor\backend\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj]
+    1 Warning(s)
+    7 Error(s)
+
+Time Elapsed 00:00:00.81

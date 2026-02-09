@@ -1,0 +1,6 @@
+@BG3.SaveEditor.Api_HostAddress = http://localhost:5062
+
+GET {{BG3.SaveEditor.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

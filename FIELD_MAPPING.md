@@ -11,20 +11,45 @@ A `.lsv` save package contains:
 ## Field Locations
 
 ### 1. Currency (Gold)
-- **File**: `WLD_Main_A.lsx` (typically in `Items` region)
-- **Search Key**: `OBJ_GoldCoin` or `OBJ_GoldPile`
+
+> [!IMPORTANT]
+> Gold storage in BG3 is complex due to two different contexts.
+
+#### A. Template Gold (ItemList Items)
+- **File**: `Globals.lsx` or `WLD_Main_A.lsx`
+- **Location**: Inside `<node id="ItemList">` → `<node id="Item">` structures
+- **Has Amount**: ✅ Yes
+- **Structure**:
+  ```xml
+  <node id="ItemList">
+    <children>
+      <node id="Item">
+        <attribute id="ItemName" type="LSString" value="LOOT_Gold_A" />
+        <attribute id="Amount" type="int32" value="5" />
+      </node>
+    </children>
+  </node>
+  ```
+
+#### B. Runtime Inventory Gold (Character Inventory Items)
+- **File**: `Globals.lsx` (global inventory) and `WLD_Main_A.lsx` (level items)
+- **Search Key**: `OBJ_GoldCoin`, `OBJ_GoldPile`
+- **Has Amount**: ❌ **NO** - stored in binary format!
 - **Structure**:
   ```xml
   <node id="Item">
-      <!-- ... -->
-      <attribute id="Stats" type="FixedString" value="OBJ_GoldCoin" />
-      <attribute id="Amount" type="int32" value="1" /> <!-- Single coin -->
-      <!-- OR -->
-      <attribute id="StackAmount" type="int32" value="1234" /> <!-- Stack of coins -->
-      <!-- ... -->
+    <attribute id="Stats" type="FixedString" value="OBJ_GoldCoin" />
+    <!-- NO Amount or StackAmount attribute! Quantity stored in NewAge binary -->
   </node>
   ```
-  _Note: `StackAmount` seems to be the field for stacks > 1._
+
+> [!WARNING]
+> **Character inventory gold is stored in the NewAge binary format (LSMF):**
+> - **Location**: `Globals.lsx` → `<region id="NewAge">` → `ScratchBuffer` attribute
+> - **Format**: Base64-encoded binary blob (~24MB)
+> - **Status**: Community is reverse-engineering this ([LSLib issue #127](https://github.com/Norbyte/lslib/issues/127))
+>
+> _Modifying character gold requires parsing the LSMF binary format._
 
 ### 2. Character Experience & Level
 - **File**: `WLD_Main_A.lsx`

@@ -28,3 +28,15 @@ extracted
 src-tauri/target/
 src-tauri/target
 sample_save.lsv
+
+# .NET
+backend/bin/
+backend/obj/
+backend/**/bin/
+backend/**/obj/
+backend/lib/lslib/
+backend/lib/*.zip
+*.user
+
+# Debug files
+gold_debug.txt

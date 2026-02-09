@@ -73,3 +73,19 @@
 - ✅ Code organization: Clear SoC/HC/LC
 - ✅ Maintainability: 8 helper functions, 6 composables
 - ✅ Reusability: All styles use CSS variables, all API calls use `useInvokeCommand()`
+## Phase 7: C# Backend Migration (Current) 🚀
+- [x] **Project Setup**:
+  - [x] Create ASP.NET Core Web API keys
+  - [x] Create Core Class Library
+- [x] **LSLib Integration**:
+  - [x] Import native DLLs (granny2.dll, LSLibNative.dll)
+  - [x] Verify Package extraction
+- [x] **Data Research**:
+  - [x] Confirm Template gold parsing (XML/LSF)
+  - [x] Identify Character gold location (NewAge / ScratchBuffer binary)
+- [ ] **Core Implementation**:
+  - [ ] Implement `ScratchBuffer` parsing for character inventory
+  - [ ] Port Save/Backup logic from Rust to C#
+- [ ] **Frontend Integration**:
+  - [ ] Replace Tauri `invoke` with HTTP calls (Axios/Fetch)
+  - [ ] Update GoldEditor to use new API endpoints

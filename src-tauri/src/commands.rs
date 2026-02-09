@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
 use crate::bg3_io;
 use crate::save_model;
+use std::path::{Path, PathBuf};
 
 #[derive(serde::Serialize)]
 pub struct SaveEntry {
@@ -24,10 +24,10 @@ fn get_temp_save_path() -> Result<PathBuf, String> {
 fn expand_path_variables(path: &str) -> Result<String, String> {
     if path.contains("%LOCALAPPDATA%") || path.contains("$env:LOCALAPPDATA") {
         let local_appdata = std::env::var("LOCALAPPDATA")
-            .or_else(|_| std::env::var("UserProfile")
-                .map(|p| format!("{}\\AppData\\Local", p)))
+            .or_else(|_| std::env::var("UserProfile").map(|p| format!("{}\\AppData\\Local", p)))
             .map_err(|_| "Could not determine LocalAppData folder".to_string())?;
-        Ok(path.replace("%LOCALAPPDATA%", &local_appdata)
+        Ok(path
+            .replace("%LOCALAPPDATA%", &local_appdata)
             .replace("$env:LOCALAPPDATA", &local_appdata))
     } else {
         Ok(path.to_string())
@@ -44,9 +44,8 @@ fn clean_and_create_directory(path: &Path) -> Result<(), String> {
 
 /// Find first .lsv file in directory
 fn find_save_file_in_directory(dir: &Path) -> Result<Option<PathBuf>, String> {
-    let entries = std::fs::read_dir(dir)
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
-    
+    let entries = std::fs::read_dir(dir).map_err(|e| format!("Failed to read directory: {}", e))?;
+
     for entry in entries {
         if let Ok(entry) = entry {
             let path = entry.path();
@@ -64,9 +63,10 @@ fn create_save_entry(dir_path: &Path, lsv_path: &Path) -> Result<SaveEntry, Stri
         .and_then(|m| m.modified())
         .map(|t| format!("{:?}", t))
         .unwrap_or_else(|_| "Unknown".to_string());
-    
+
     Ok(SaveEntry {
-        name: dir_path.file_name()
+        name: dir_path
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("Unknown")
             .to_string(),
@@ -83,25 +83,23 @@ fn validate_file_exists(path: &str) -> Result<(), String> {
     Ok(())
 }
 
-
 #[tauri::command]
 pub fn list_saves(folder_path: String) -> Result<Vec<SaveEntry>, String> {
     let expanded_path = expand_path_variables(&folder_path)?;
     let dir = Path::new(&expanded_path);
-    
+
     if !dir.exists() || !dir.is_dir() {
         return Err(format!("Invalid directory: {}", expanded_path));
     }
-    
+
     let mut saves = Vec::new();
-    
-    let entries = std::fs::read_dir(dir)
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
-    
+
+    let entries = std::fs::read_dir(dir).map_err(|e| format!("Failed to read directory: {}", e))?;
+
     for entry in entries {
         if let Ok(entry) = entry {
             let path = entry.path();
-            
+
             if path.is_dir() {
                 if let Ok(lsv_file) = find_save_file_in_directory(&path) {
                     if let Some(lsv_path) = lsv_file {
@@ -113,10 +111,10 @@ pub fn list_saves(folder_path: String) -> Result<Vec<SaveEntry>, String> {
             }
         }
     }
-    
+
     // Sort by modified time (most recent first)
     saves.sort_by(|a, b| b.modified.cmp(&a.modified));
-    
+
     Ok(saves)
 }
 
@@ -124,17 +122,17 @@ pub fn list_saves(folder_path: String) -> Result<Vec<SaveEntry>, String> {
 pub fn check_lslib_status() -> Result<String, String> {
     match bg3_io::get_divine_path() {
         Ok(path) => Ok(format!("LSLib tools found at: {}", path)),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
 #[tauri::command]
 pub async fn extract_save(save_path: String) -> Result<String, String> {
     validate_file_exists(&save_path)?;
-    
+
     let extract_path = get_temp_save_path()?;
     let extract_path_str = extract_path.to_string_lossy().to_string();
-    
+
     // Clean and recreate extraction directory
     clean_and_create_directory(&extract_path)?;
 
@@ -156,19 +154,22 @@ pub async fn extract_save(save_path: String) -> Result<String, String> {
     if Path::new(&level_lsf).exists() {
         bg3_io::convert_lsf_to_lsx(&level_lsf, &level_lsx)?;
     }
-    
+
     // Store the original save path for later use
     let marker_path = format!("{}/.source_path", extract_path_str);
     std::fs::write(marker_path, &save_path).map_err(|e| e.to_string())?;
 
-    Ok(format!("Save extracted and converted to {}", extract_path_str))
+    Ok(format!(
+        "Save extracted and converted to {}",
+        extract_path_str
+    ))
 }
 
 #[tauri::command]
 pub async fn read_save_info() -> Result<serde_json::Value, String> {
     let extract_path = get_temp_save_path()?;
     let info_path = extract_path.join("SaveInfo.json");
-    
+
     if !info_path.exists() {
         return Err("SaveInfo.json not found. Extract a save first.".to_string());
     }
@@ -180,16 +181,16 @@ pub async fn read_save_info() -> Result<serde_json::Value, String> {
 #[tauri::command]
 pub async fn get_gold_count() -> Result<save_model::SaveState, String> {
     let extract_path = get_temp_save_path()?;
-    
+
     // Check both Globals.lsx and WLD_Main_A.lsx for gold
     let globals_path = extract_path.join("Globals.lsx");
     let level_path = extract_path.join("LevelCache/WLD_Main_A.lsx");
-    
+
     let mut combined_state = save_model::SaveState {
         total_gold: 0,
         items: Vec::new(),
     };
-    
+
     // Read Globals.lsx
     if globals_path.exists() {
         let content = std::fs::read_to_string(&globals_path).map_err(|e| e.to_string())?;
@@ -197,7 +198,7 @@ pub async fn get_gold_count() -> Result<save_model::SaveState, String> {
         combined_state.total_gold += globals_state.total_gold;
         combined_state.items.extend(globals_state.items);
     }
-    
+
     // Read WLD_Main_A.lsx
     if level_path.exists() {
         let content = std::fs::read_to_string(&level_path).map_err(|e| e.to_string())?;
@@ -205,11 +206,11 @@ pub async fn get_gold_count() -> Result<save_model::SaveState, String> {
         combined_state.total_gold += level_state.total_gold;
         combined_state.items.extend(level_state.items);
     }
-    
+
     if !globals_path.exists() && !level_path.exists() {
         return Err("Save data not found. Extract a save first.".to_string());
     }
-    
+
     Ok(combined_state)
 }
 
@@ -218,38 +219,67 @@ pub async fn modify_and_save_gold(new_gold: i32) -> Result<String, String> {
     // Get paths
     let extract_path = get_temp_save_path()?;
     let save_path_marker = extract_path.join(".source_path");
-    
+
     // Read the original save path (stored during extraction)
     let source_save_path = std::fs::read_to_string(&save_path_marker)
         .map_err(|_| "Original save path not found. Please extract a save first.".to_string())?;
-    
+
     // Create backup
     let backup_path = bg3_io::backup_save(&source_save_path)?;
-    
-    // Read and modify the LSX file
-    let lsx_path = extract_path.join("Globals.lsx");
-    if !lsx_path.exists() {
-        return Err("Globals data not found (Globals.lsx). Extract a save first.".to_string());
+
+    // 1. Analyze where the gold is
+    let globals_lsx = extract_path.join("Globals.lsx");
+    let level_lsx = extract_path.join("LevelCache/WLD_Main_A.lsx");
+
+    let mut globals_gold = 0;
+    let mut level_gold = 0;
+
+    if globals_lsx.exists() {
+        let content = std::fs::read_to_string(&globals_lsx).map_err(|e| e.to_string())?;
+        globals_gold = save_model::get_gold_info(&content).total_gold;
     }
-    
-    let content = std::fs::read_to_string(&lsx_path).map_err(|e| e.to_string())?;
+
+    if level_lsx.exists() {
+        let content = std::fs::read_to_string(&level_lsx).map_err(|e| e.to_string())?;
+        level_gold = save_model::get_gold_info(&content).total_gold;
+    }
+
+    println!(
+        "Gold analysis: Globals={}, Level={}",
+        globals_gold, level_gold
+    );
+
+    // 2. Decide which file to modify - pick the one with MORE gold (likely active inventory)
+    // If equal, prefer Level (usually active zone). If both 0, try Level first.
+    let (target_file, target_lsf) = if level_gold >= globals_gold && level_lsx.exists() {
+        (level_lsx, extract_path.join("LevelCache/WLD_Main_A.lsf"))
+    } else if globals_lsx.exists() {
+        (globals_lsx, extract_path.join("Globals.lsf"))
+    } else if level_lsx.exists() {
+        (level_lsx, extract_path.join("LevelCache/WLD_Main_A.lsf"))
+    } else {
+        return Err("No valid save files found to modify.".to_string());
+    };
+
+    // 3. Modify the target file
+    println!("Modifying gold in {:?}", target_file);
+    let content = std::fs::read_to_string(&target_file).map_err(|e| e.to_string())?;
     let modified_content = save_model::modify_gold(&content, new_gold)?;
-    
-    // Write modified LSX back
-    std::fs::write(&lsx_path, modified_content).map_err(|e| e.to_string())?;
-    
-    // Convert LSX back to LSF for both Globals and Level
-    let globals_lsf = extract_path.join("Globals.lsf");
+    std::fs::write(&target_file, modified_content).map_err(|e| e.to_string())?;
+
     bg3_io::convert_lsx_to_lsf(
-        &lsx_path.to_string_lossy().to_string(),
-        &globals_lsf.to_string_lossy().to_string()
+        &target_file.to_string_lossy().to_string(),
+        &target_lsf.to_string_lossy().to_string(),
     )?;
-    
+
     // Repack the save
     let output_save = format!("{}_modified.lsv", source_save_path.trim_end_matches(".lsv"));
     bg3_io::repack_save(&extract_path.to_string_lossy().to_string(), &output_save)?;
-    
-    Ok(format!("Save modified successfully!\nBackup: {}\nNew save: {}", backup_path, output_save))
+
+    Ok(format!(
+        "Save modified successfully!\nBackup: {}\nNew save: {}",
+        backup_path, output_save
+    ))
 }
 
 #[tauri::command]
