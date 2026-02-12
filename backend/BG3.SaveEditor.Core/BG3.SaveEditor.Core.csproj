@@ -9,38 +9,38 @@
   <!-- All LSLib DLLs -->
   <ItemGroup>
     <Reference Include="LSLib">
-      <HintPath>..\lib\lslib\Packed\LSLib.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\LSLib.dll</HintPath>
     </Reference>
     <Reference Include="K4os.Compression.LZ4">
-      <HintPath>..\lib\lslib\Packed\K4os.Compression.LZ4.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\K4os.Compression.LZ4.dll</HintPath>
     </Reference>
     <Reference Include="K4os.Compression.LZ4.Streams">
-      <HintPath>..\lib\lslib\Packed\K4os.Compression.LZ4.Streams.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\K4os.Compression.LZ4.Streams.dll</HintPath>
     </Reference>
     <Reference Include="K4os.Hash.xxHash">
-      <HintPath>..\lib\lslib\Packed\K4os.Hash.xxHash.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\K4os.Hash.xxHash.dll</HintPath>
     </Reference>
     <Reference Include="ZstdSharp">
-      <HintPath>..\lib\lslib\Packed\ZstdSharp.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\ZstdSharp.dll</HintPath>
     </Reference>
     <Reference Include="System.IO.Hashing">
-      <HintPath>..\lib\lslib\Packed\System.IO.Hashing.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\System.IO.Hashing.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK.Mathematics">
-      <HintPath>..\lib\lslib\Packed\OpenTK.Mathematics.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\OpenTK.Mathematics.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\lib\lslib\Packed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\tools\lslib\Packed\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <!-- Copy native DLLs to output -->
   <ItemGroup>
-    <None Include="..\lib\lslib\Packed\LSLibNative.dll">
+    <None Include="..\..\tools\lslib\Packed\LSLibNative.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>LSLibNative.dll</Link>
     </None>
-    <None Include="..\lib\lslib\Packed\granny2.dll">
+    <None Include="..\..\tools\lslib\Packed\granny2.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>granny2.dll</Link>
     </None>

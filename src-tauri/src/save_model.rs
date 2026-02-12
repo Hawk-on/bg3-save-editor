@@ -52,19 +52,19 @@ pub fn get_gold_info(content: &str) -> SaveState {
     let mut total_gold = 0;
     let mut count = 0;
 
-    // Log to debug file
-    let mut debug_file = std::fs::File::create("C:\\Git\\BG3 savegame editor\\gold_debug.txt").ok();
+    // Log to debug file (relative to current working directory)
+    let mut debug_file = std::fs::File::create("gold_debug.txt").ok();
     if let Some(ref mut f) = debug_file {
         use std::io::Write;
-        let _ = writeln!(f, "\nDEBUG: Searching for gold in ItemList nodes\n");
+        let _ = writeln!(f, "\nDEBUG: Searching for gold in InventoryList nodes\n");
     }
 
-    // Find all ItemList sections
-    let inventory_parts: Vec<&str> = content.split("<node id=\"ItemList\">").collect();
+    // Find all InventoryList sections (gold is stored in character inventory, not ItemList)
+    let inventory_parts: Vec<&str> = content.split("<node id=\"InventoryList\">").collect();
 
     if let Some(ref mut f) = debug_file {
         use std::io::Write;
-        let _ = writeln!(f, "Found {} ItemList sections\n", inventory_parts.len());
+        let _ = writeln!(f, "Found {} InventoryList sections\n", inventory_parts.len());
     }
 
     // Process each inventory section (skip the part before the first InventoryList)
@@ -156,14 +156,28 @@ pub fn modify_gold(content: &str, new_amount: i32) -> Result<String, String> {
     let mut modified_first = false;
     let mut in_item_node = false;
     let mut current_item_is_gold = false;
+    let mut node_depth: i32 = 0;
 
     for (i, line) in lines.iter().enumerate() {
         let trimmed = line.trim_start();
 
         // Check if entering an Item node
-        if trimmed.starts_with("<node id=\"Item\">") {
+        if trimmed.starts_with("<node id=\"Item\">") && !in_item_node {
             in_item_node = true;
+            node_depth = 1;
             current_item_is_gold = check_item_is_gold(&lines, i);
+        } else if in_item_node {
+            // Track nesting depth within the Item node
+            if trimmed.starts_with("<node ") {
+                node_depth += 1;
+            }
+            if trimmed.starts_with("</node>") {
+                node_depth -= 1;
+                if node_depth == 0 {
+                    in_item_node = false;
+                    current_item_is_gold = false;
+                }
+            }
         }
 
         // Try to modify Amount or StackAmount attribute in gold items
@@ -180,12 +194,6 @@ pub fn modify_gold(content: &str, new_amount: i32) -> Result<String, String> {
                 result_lines.push(modified_line);
                 continue;
             }
-        }
-
-        // Check if exiting Item node
-        if in_item_node && trimmed == "</node>" {
-            in_item_node = false;
-            current_item_is_gold = false;
         }
 
         result_lines.push(line.to_string());
