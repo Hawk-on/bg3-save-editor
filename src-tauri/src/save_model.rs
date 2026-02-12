@@ -56,26 +56,30 @@ pub fn get_gold_info(content: &str) -> SaveState {
     let mut debug_file = std::fs::File::create("gold_debug.txt").ok();
     if let Some(ref mut f) = debug_file {
         use std::io::Write;
-        let _ = writeln!(f, "\nDEBUG: Searching for gold in InventoryList nodes\n");
+        let _ = writeln!(f, "\nDEBUG: Searching for gold in InventoryList and ItemList nodes\n");
     }
 
-    // Find all InventoryList sections (gold is stored in character inventory, not ItemList)
-    let inventory_parts: Vec<&str> = content.split("<node id=\"InventoryList\">").collect();
+    // Search both InventoryList and ItemList sections — gold may be in either
+    // depending on save version and context
+    let section_names = ["InventoryList", "ItemList"];
+    for section_name in &section_names {
+        let split_key = format!("<node id=\"{}\">", section_name);
+        let parts: Vec<&str> = content.split(&split_key).collect();
 
-    if let Some(ref mut f) = debug_file {
-        use std::io::Write;
-        let _ = writeln!(f, "Found {} InventoryList sections\n", inventory_parts.len());
-    }
+        if let Some(ref mut f) = debug_file {
+            use std::io::Write;
+            let _ = writeln!(f, "Found {} {} sections", parts.len() - 1, section_name);
+        }
 
-    // Process each inventory section (skip the part before the first InventoryList)
-    for inv_part in inventory_parts.iter().skip(1) {
-        process_inventory_section(
-            inv_part,
-            &mut items,
-            &mut total_gold,
-            &mut count,
-            &mut debug_file,
-        );
+        for inv_part in parts.iter().skip(1) {
+            process_inventory_section(
+                inv_part,
+                &mut items,
+                &mut total_gold,
+                &mut count,
+                &mut debug_file,
+            );
+        }
     }
 
     if let Some(ref mut f) = debug_file {
