@@ -1,15 +1,15 @@
 import { ref, computed } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
-import { useInvokeCommand } from "./useApi";
+import { apiPost } from "./useApi";
 
 export interface SaveEntry {
   name: string;
   path: string;
   modified: string;
+  size?: number;
 }
 
 // Shared state (singleton pattern)
-const savesFolder = ref("%LOCALAPPDATA%\\Larian Studios\\Baldur's Gate 3\\PlayerProfiles\\Public\\Savegames\\Story");
+const savesFolder = ref("C:\\Users\\Hawkon\\AppData\\Local\\Larian Studios\\Baldur's Gate 3\\PlayerProfiles\\Public\\Savegames\\Story");
 const availableSaves = ref<SaveEntry[]>([]);
 const selectedSave = ref("");
 const extractionStatus = ref("");
@@ -20,22 +20,13 @@ export function useSaveList() {
   const hasAvailableSaves = computed(() => availableSaves.value.length > 0);
 
   /**
-   * Open a folder browser dialog to select saves location
+   * Browse for saves folder (HTTP API doesn't support folder dialog, so we'll need manual input)
    */
   async function browseSavesFolder() {
-    try {
-      const selected = await open({
-        multiple: false,
-        directory: true,
-        defaultPath: savesFolder.value
-      });
-      
-      if (selected) {
-        savesFolder.value = selected as string;
-        await loadSavesList();
-      }
-    } catch (e) {
-      console.error("Failed to open folder dialog", e);
+    const newPath = prompt("Enter the path to your saves folder:", savesFolder.value);
+    if (newPath) {
+      savesFolder.value = newPath;
+      await loadSavesList();
     }
   }
 
@@ -44,9 +35,17 @@ export function useSaveList() {
    */
   async function loadSavesList() {
     try {
-      availableSaves.value = await useInvokeCommand<SaveEntry[]>("list_saves", 
-        { folderPath: savesFolder.value }) || [];
-      
+      const response = await apiPost<SaveEntry[]>("/api/save/list", {
+        Path: savesFolder.value
+      });
+
+      availableSaves.value = response.map((save: any) => ({
+        name: save.name || save.Name,
+        path: save.path || save.Path,
+        modified: save.modified || save.Modified,
+        size: save.size || save.Size
+      }));
+
       if (hasAvailableSaves.value) {
         selectedSave.value = availableSaves.value[0].path;
         extractionStatus.value = `Found ${availableSaves.value.length} save(s)`;

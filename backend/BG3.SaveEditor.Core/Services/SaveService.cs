@@ -1,6 +1,7 @@
 using BG3.SaveEditor.Core.Models;
 using LSLib.LS;
 using LSLib.LS.Enums;
+using System.Diagnostics;
 
 namespace BG3.SaveEditor.Core.Services;
 
@@ -105,17 +106,253 @@ public class SaveService
     /// <summary>
     /// Modify gold amount in save
     /// </summary>
-    public async Task<bool> SetGoldAsync(string savePath, int newAmount, string outputPath)
+    public async Task<string> SetGoldAsync(string savePath, int newAmount, string? outputPath = null)
     {
-        // TODO: Implement gold modification using LSLib's write capabilities
-        // This will involve:
-        // 1. Reading the package
-        // 2. Finding gold entries in Globals.lsf
-        // 3. Modifying the values
-        // 4. Writing back to a new package
-        await Task.CompletedTask;
-        throw new NotImplementedException("Gold modification coming soon");
+        if (newAmount < 0 || newAmount > 999_999_999)
+        {
+            throw new ArgumentException("Gold amount must be between 0 and 999,999,999");
+        }
+
+        // Create backup first
+        var backupPath = CreateBackup(savePath);
+        Console.WriteLine($"[DEBUG] Backup created at: {backupPath}");
+
+        // Set output path
+        outputPath ??= savePath.Replace(".lsv", "_modified.lsv");
+
+        // Extract save to temp directory
+        var tempDir = Path.Combine(Path.GetTempPath(), "BG3SaveEditor", Guid.NewGuid().ToString());
+        var extractDir = Path.Combine(tempDir, "extracted");
+        Directory.CreateDirectory(extractDir);
+
+        try
+        {
+            // Step 1: Extract the save using Divine.exe
+            Console.WriteLine("[DEBUG] Extracting save...");
+            await ExecuteDivineAsync(new[] { "-g", "bg3", "-a", "extract-package", "-s", savePath, "-d", extractDir });
+
+            // Step 2: Read and modify Globals.lsf
+            var globalsLsf = Path.Combine(extractDir, "Globals.lsf");
+            if (!File.Exists(globalsLsf))
+            {
+                throw new FileNotFoundException("Globals.lsf not found in save");
+            }
+
+            Console.WriteLine("[DEBUG] Reading Globals.lsf...");
+            Resource resource;
+            using (var stream = File.OpenRead(globalsLsf))
+            {
+                var lsfReader = new LSFReader(stream);
+                resource = lsfReader.Read();
+            }
+
+            // Modify gold items
+            int modifiedCount = ModifyGoldInResource(resource, newAmount);
+            Console.WriteLine($"[DEBUG] Modified {modifiedCount} gold items");
+
+            if (modifiedCount == 0)
+            {
+                throw new InvalidOperationException("No gold items found to modify in save file");
+            }
+
+            // Write modified LSF back
+            Console.WriteLine("[DEBUG] Writing modified Globals.lsf...");
+            using (var stream = File.Create(globalsLsf))
+            {
+                var lsfWriter = new LSFWriter(stream);
+                lsfWriter.Write(resource);
+            }
+
+            // Step 3: Repack the save using Divine.exe
+            Console.WriteLine($"[DEBUG] Repacking save to: {outputPath}");
+            await ExecuteDivineAsync(new[] { "-g", "bg3", "-a", "create-package", "-s", extractDir, "-d", outputPath, "-c", "lz4" });
+
+            Console.WriteLine($"[DEBUG] Save modified successfully");
+            return outputPath;
+        }
+        finally
+        {
+            // Cleanup temp directory
+            try
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+            catch { /* Ignore cleanup errors */ }
+        }
     }
+
+    /// <summary>
+    /// Execute Divine.exe with the given arguments
+    /// </summary>
+    private async Task ExecuteDivineAsync(string[] args)
+    {
+        var divinePath = GetDivinePath();
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = divinePath,
+            Arguments = string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        Console.WriteLine($"[DEBUG] Executing: {startInfo.FileName} {startInfo.Arguments}");
+
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var error = await process.StandardError.ReadToEndAsync();
+
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"Divine.exe failed: {error}\n{output}");
+        }
+
+        Console.WriteLine($"[DEBUG] Divine.exe output: {output}");
+    }
+
+    /// <summary>
+    /// Get the path to Divine.exe
+    /// </summary>
+    private string GetDivinePath()
+    {
+        // Look for Divine.exe in the lib folder relative to the application
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        var possiblePaths = new[]
+        {
+            Path.Combine(basePath, "..\\..\\..\\..\\..\\backend\\lib\\lslib\\Packed\\Tools\\Divine.exe"),
+            Path.Combine(basePath, "..\\..\\..\\..\\lib\\lslib\\Packed\\Tools\\Divine.exe"),
+            Path.Combine(basePath, "lib\\lslib\\Packed\\Tools\\Divine.exe"),
+            "C:\\Git\\BG3 savegame editor\\backend\\lib\\lslib\\Packed\\Tools\\Divine.exe" // Fallback absolute path
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            var fullPath = Path.GetFullPath(path);
+            if (File.Exists(fullPath))
+            {
+                Console.WriteLine($"[DEBUG] Found Divine.exe at: {fullPath}");
+                return fullPath;
+            }
+        }
+
+        throw new FileNotFoundException("Divine.exe not found. Please ensure LSLib is installed in the lib folder.");
+    }
+
+    /// <summary>
+    /// Create a timestamped backup of a save file
+    /// </summary>
+    public string CreateBackup(string savePath)
+    {
+        if (!File.Exists(savePath))
+        {
+            throw new FileNotFoundException("Save file not found", savePath);
+        }
+
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        var fileName = Path.GetFileNameWithoutExtension(savePath);
+        var directory = Path.GetDirectoryName(savePath) ?? "";
+
+        var backupPath = Path.Combine(directory, $"{fileName}_backup_{timestamp}.lsv");
+        File.Copy(savePath, backupPath);
+
+        Console.WriteLine($"[DEBUG] Backup created: {backupPath}");
+        return backupPath;
+    }
+
+    private int ModifyGoldInResource(Resource resource, int newAmount)
+    {
+        int count = 0;
+        bool isFirstGold = true;
+
+        // Search in Templates region
+        if (resource.Regions.TryGetValue("Templates", out var templatesRegion))
+        {
+            count += ModifyGoldInNode(templatesRegion, newAmount, ref isFirstGold);
+        }
+
+        // Search in Items region
+        if (resource.Regions.TryGetValue("Items", out var itemsRegion))
+        {
+            count += ModifyGoldInNode(itemsRegion, newAmount, ref isFirstGold);
+        }
+
+        // Search in all other regions that might contain inventory
+        foreach (var region in resource.Regions)
+        {
+            if (region.Key != "Templates" && region.Key != "Items")
+            {
+                count += ModifyGoldInNode(region.Value, newAmount, ref isFirstGold);
+            }
+        }
+
+        return count;
+    }
+
+    private int ModifyGoldInNode(Node node, int newAmount, ref bool isFirstGold)
+    {
+        int count = 0;
+
+        // Check if this node is a gold item
+        var templateName = GetAttributeValue<string>(node, "MapKey") ??
+                           GetAttributeValue<string>(node, "Stats") ??
+                           GetAttributeValue<string>(node, "ItemName");
+
+        if (templateName != null &&
+            (templateName.Contains("Gold", StringComparison.OrdinalIgnoreCase) ||
+             templateName.Contains("LOOT_Gold", StringComparison.OrdinalIgnoreCase)))
+        {
+            // Modify the amount
+            if (isFirstGold)
+            {
+                // Set first gold item to the full amount
+                SetAttributeValue(node, "Amount", newAmount);
+                SetAttributeValue(node, "StackAmount", newAmount);
+                isFirstGold = false;
+                Console.WriteLine($"[DEBUG] Set first gold item to {newAmount}");
+            }
+            else
+            {
+                // Set additional gold items to 1 (or remove them)
+                SetAttributeValue(node, "Amount", 1);
+                SetAttributeValue(node, "StackAmount", 1);
+                Console.WriteLine($"[DEBUG] Set additional gold item to 1");
+            }
+            count++;
+        }
+
+        // Recurse into children
+        if (node.Children != null)
+        {
+            foreach (var childList in node.Children.Values)
+            {
+                foreach (var child in childList)
+                {
+                    count += ModifyGoldInNode(child, newAmount, ref isFirstGold);
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private void SetAttributeValue<T>(Node node, string name, T value)
+    {
+        if (node.Attributes.ContainsKey(name))
+        {
+            node.Attributes[name].Value = value;
+        }
+        // Note: LSLib requires attributes to exist - we only modify existing ones
+    }
+
 
     private SaveInfo ParseSaveInfo(string json, SaveInfo info)
     {
