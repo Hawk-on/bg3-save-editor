@@ -14,8 +14,8 @@ try
     Console.WriteLine($"Found {info.TotalGold} gold (Expected ~195)");
 
     // Inspect resource structure
-    var reader = new LSLib.LS.PackageReader(path);
-    var package = reader.Read();
+    var reader = new PackageReader();
+    var package = reader.Read(path);
     var globals = package.Files.FirstOrDefault(f => f.Name.Contains("Globals.lsf"));
     if (globals != null)
     {
