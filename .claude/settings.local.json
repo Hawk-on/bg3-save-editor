@@ -5,7 +5,8 @@
       "Bash(dotnet build:*)",
       "Bash(where:*)",
       "Bash(npm run build:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
