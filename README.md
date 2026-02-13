@@ -1,9 +1,9 @@
 # BG3 Save Editor
 
-A modern, cross-platform save game editor for Baldur's Gate 3 featuring a Vue 3 frontend and a high-performance C# .NET backend using LSLib.
+A modern, cross-platform save game editor for Baldur's Gate 3 featuring an Angular 20 frontend and a high-performance C# .NET backend using LSLib.
 
 ## Features
-- **Modern UI**: Clean, responsive interface built with Vue 3 and TypeScript
+- **Modern UI**: Clean, responsive interface built with Angular 20 LTS and TypeScript
 - **Native Parsing**: Uses C# backend with native [LSLib](https://github.com/Norbyte/lslib) integration for reliable save handling
 - **Gold Editing**: View and modify gold amounts in your saves
 - **Automatic Backups**: Creates timestamped backups before any modifications
@@ -12,9 +12,10 @@ A modern, cross-platform save game editor for Baldur's Gate 3 featuring a Vue 3 
 ## Architecture
 
 ```
-Frontend (Vue 3 + TypeScript)
-├── HTTP API Client (fetch)
-└── Composables for state management
+Frontend (Angular 20 LTS + TypeScript)
+├── HttpClient - Angular HTTP client
+├── Services - Business logic with signals
+└── Standalone Components - Modern Angular architecture
 
 Backend (ASP.NET Core Web API .NET 8)
 ├── SaveService - Core save manipulation logic
@@ -25,11 +26,12 @@ Backend (ASP.NET Core Web API .NET 8)
 ## Project Structure
 
 ```
-src/                  # Vue 3 Frontend
-├── components/       # UI components
-├── composables/      # Business logic & API integration
-└── App.vue           # Root component
-
+frontend-ng/          # Angular 20 Frontend
+├── src/app/
+│   ├── components/  # Standalone UI components
+│   ├── services/    # Business logic & API integration
+│   └── app.ts       # Root component
+│
 backend/              # C# Backend (.NET 8)
 ├── BG3.SaveEditor.Api/   # ASP.NET Core Web API
 ├── BG3.SaveEditor.Core/  # Core logic & LSLib integration
@@ -59,15 +61,16 @@ The API will start on **http://localhost:5062**
 Open another terminal in the project root:
 
 ```powershell
+cd frontend-ng
 npm install
-npm run dev
+npm start
 ```
 
-The frontend will start on **http://localhost:5173**
+The frontend will start on **http://localhost:4200**
 
 ### 3. Open in Browser
 
-Navigate to http://localhost:5173 and start editing your saves!
+Navigate to http://localhost:4200 and start editing your saves!
 
 ## API Endpoints
 
@@ -93,10 +96,13 @@ The backend exposes the following REST endpoints:
 
 ### Frontend Configuration
 
-Create a `.env` file in the project root to customize the API URL:
+Edit `frontend-ng/src/environments/environment.ts` to customize the API URL:
 
-```env
-VITE_API_URL=http://localhost:5062
+```typescript
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:5062'
+};
 ```
 
 ### Default Save Location
@@ -121,17 +127,20 @@ dotnet watch --project backend/BG3.SaveEditor.Api
 ### Frontend Development
 
 ```powershell
+# Navigate to Angular app
+cd frontend-ng
+
 # Install dependencies
 npm install
 
 # Dev server with hot reload
-npm run dev
-
-# Type checking
-npm run type-check
+npm start
 
 # Build for production
 npm run build
+
+# Run tests
+npm test
 ```
 
 ## How It Works
@@ -142,13 +151,19 @@ npm run build
 4. **Repack**: Uses Divine.exe to repack the modified save
 5. **Backup**: Automatic timestamped backups before any changes
 
-## Migration Notes
+## Migration History
 
-This project was migrated from a Rust/Tauri desktop application to a web-based architecture with C# backend:
+This project has evolved through multiple architectures:
 
-- **Previous**: Tauri (Rust backend + Vue frontend in Electron-style app)
-- **Current**: Standalone web app with .NET API backend
-- **Benefit**: Better compatibility with .NET ecosystem, easier to maintain, more flexible deployment
+1. **v1**: Tauri (Rust backend + Vue 3 frontend in desktop app)
+2. **v2**: Web app (C# .NET backend + Vue 3 frontend)
+3. **v3 (Current)**: Web app (C# .NET backend + Angular 20 LTS frontend)
+
+**Benefits of current architecture**:
+- Angular 20 LTS for long-term support and familiar Angular ecosystem
+- C# .NET backend for better Windows compatibility
+- Easier to maintain with strong typing throughout
+- More flexible deployment options
 
 ## Documentation
 
@@ -164,8 +179,8 @@ This project was migrated from a Rust/Tauri desktop application to a web-based a
 
 ### Frontend can't connect to backend
 - Verify backend is running on port 5062
-- Check the console for CORS errors
-- Ensure `.env` file has correct `VITE_API_URL`
+- Check the browser console for CORS errors
+- Ensure `environment.ts` has correct `apiUrl`
 
 ### Gold modification fails
 - Ensure you have write permissions to the save directory
