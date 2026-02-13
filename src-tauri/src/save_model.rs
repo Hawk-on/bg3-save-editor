@@ -52,30 +52,34 @@ pub fn get_gold_info(content: &str) -> SaveState {
     let mut total_gold = 0;
     let mut count = 0;
 
-    // Log to debug file
-    let mut debug_file = std::fs::File::create("C:\\Git\\BG3 savegame editor\\gold_debug.txt").ok();
+    // Log to debug file (relative to current working directory)
+    let mut debug_file = std::fs::File::create("gold_debug.txt").ok();
     if let Some(ref mut f) = debug_file {
         use std::io::Write;
-        let _ = writeln!(f, "\nDEBUG: Searching for gold in ItemList nodes\n");
+        let _ = writeln!(f, "\nDEBUG: Searching for gold in InventoryList and ItemList nodes\n");
     }
 
-    // Find all ItemList sections
-    let inventory_parts: Vec<&str> = content.split("<node id=\"ItemList\">").collect();
+    // Search both InventoryList and ItemList sections — gold may be in either
+    // depending on save version and context
+    let section_names = ["InventoryList", "ItemList"];
+    for section_name in &section_names {
+        let split_key = format!("<node id=\"{}\">", section_name);
+        let parts: Vec<&str> = content.split(&split_key).collect();
 
-    if let Some(ref mut f) = debug_file {
-        use std::io::Write;
-        let _ = writeln!(f, "Found {} ItemList sections\n", inventory_parts.len());
-    }
+        if let Some(ref mut f) = debug_file {
+            use std::io::Write;
+            let _ = writeln!(f, "Found {} {} sections", parts.len() - 1, section_name);
+        }
 
-    // Process each inventory section (skip the part before the first InventoryList)
-    for inv_part in inventory_parts.iter().skip(1) {
-        process_inventory_section(
-            inv_part,
-            &mut items,
-            &mut total_gold,
-            &mut count,
-            &mut debug_file,
-        );
+        for inv_part in parts.iter().skip(1) {
+            process_inventory_section(
+                inv_part,
+                &mut items,
+                &mut total_gold,
+                &mut count,
+                &mut debug_file,
+            );
+        }
     }
 
     if let Some(ref mut f) = debug_file {
@@ -156,14 +160,28 @@ pub fn modify_gold(content: &str, new_amount: i32) -> Result<String, String> {
     let mut modified_first = false;
     let mut in_item_node = false;
     let mut current_item_is_gold = false;
+    let mut node_depth: i32 = 0;
 
     for (i, line) in lines.iter().enumerate() {
         let trimmed = line.trim_start();
 
         // Check if entering an Item node
-        if trimmed.starts_with("<node id=\"Item\">") {
+        if trimmed.starts_with("<node id=\"Item\">") && !in_item_node {
             in_item_node = true;
+            node_depth = 1;
             current_item_is_gold = check_item_is_gold(&lines, i);
+        } else if in_item_node {
+            // Track nesting depth within the Item node
+            if trimmed.starts_with("<node ") {
+                node_depth += 1;
+            }
+            if trimmed.starts_with("</node>") {
+                node_depth -= 1;
+                if node_depth == 0 {
+                    in_item_node = false;
+                    current_item_is_gold = false;
+                }
+            }
         }
 
         // Try to modify Amount or StackAmount attribute in gold items
@@ -180,12 +198,6 @@ pub fn modify_gold(content: &str, new_amount: i32) -> Result<String, String> {
                 result_lines.push(modified_line);
                 continue;
             }
-        }
-
-        // Check if exiting Item node
-        if in_item_node && trimmed == "</node>" {
-            in_item_node = false;
-            current_item_is_gold = false;
         }
 
         result_lines.push(line.to_string());

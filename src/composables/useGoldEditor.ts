@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
-import { useInvokeCommand } from "./useApi";
+import { apiPost } from "./useApi";
+import { useSaveExtraction } from "./useSaveExtraction";
 
 export interface GoldItemDisplay {
   name: string;
@@ -21,7 +22,7 @@ const isLoading = ref(false);
 export function useGoldEditor() {
 
   const isGoldLoaded = computed(() => goldState.value !== null);
-  const hasChangedGold = computed(() => 
+  const hasChangedGold = computed(() =>
     isGoldLoaded.value && editedGold.value !== goldState.value!.total_gold
   );
 
@@ -30,8 +31,16 @@ export function useGoldEditor() {
    */
   async function loadGoldInfo() {
     try {
-      goldState.value = await useInvokeCommand<SaveState>("get_gold_count") || null;
-      if (goldState.value) {
+      const { saveState: extractedState } = useSaveExtraction();
+
+      if (extractedState.value) {
+        goldState.value = {
+          total_gold: extractedState.value.totalGold,
+          items: extractedState.value.goldItems.map(item => ({
+            name: item.templateName,
+            amount: item.amount
+          }))
+        };
         editedGold.value = goldState.value.total_gold;
       }
     } catch (e) {
@@ -60,29 +69,35 @@ export function useGoldEditor() {
    */
   async function saveGoldChanges(onSaveSuccess?: (newSavePath: string) => Promise<void>) {
     if (!goldState.value) return;
-    
+
+    const { currentSavePath } = useSaveExtraction();
+    if (!currentSavePath.value) {
+      saveStatus.value = "❌ No save file loaded";
+      return;
+    }
+
     isLoading.value = true;
     saveStatus.value = "Saving changes...";
-    
+
     try {
-      const result = await useInvokeCommand<string>("modify_and_save_gold", 
-        { newGold: editedGold.value }) || "";
-      
-      const newSaveMatch = result.match(/New save: (.+\.lsv)/);
-      
-      if (newSaveMatch?.[1]) {
-        const modifiedSavePath = newSaveMatch[1];
+      const response = await apiPost<{ success: boolean; outputPath: string }>("/api/save/gold", {
+        Path: currentSavePath.value,
+        Amount: editedGold.value
+      });
+
+      if (response.success && response.outputPath) {
+        const modifiedSavePath = response.outputPath;
         saveStatus.value = "✅ Changes saved! Reloading modified save...";
-        
+
         if (onSaveSuccess) {
           await onSaveSuccess(modifiedSavePath);
         }
-        
-        saveStatus.value = "✅ " + result + "\n\n✓ Modified save loaded successfully!";
+
+        saveStatus.value = `✅ Gold modified successfully!\nNew save: ${modifiedSavePath}`;
       } else {
-        saveStatus.value = "✅ " + result;
+        saveStatus.value = "✅ Changes saved!";
       }
-      
+
       isEditing.value = false;
     } catch (e) {
       saveStatus.value = e as string;

@@ -1,4 +1,7 @@
-import { invoke } from "@tauri-apps/api/core";
+/**
+ * API configuration
+ */
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5062';
 
 /**
  * Generic error handler that logs and returns user-friendly message
@@ -10,15 +13,28 @@ function handleError(context: string, error: any): string {
 }
 
 /**
- * Invoke command with automatic error handling
- * @param command - The Tauri command name
- * @param args - Command arguments (optional)
- * @returns The command result or null on error
+ * Make HTTP POST request to the backend API
+ * @param endpoint - The API endpoint (e.g., '/api/save/load')
+ * @param body - Request body object
+ * @returns The response data
  */
-export async function useInvokeCommand<T>(command: string, args: any = {}): Promise<T | null> {
+export async function apiPost<T>(endpoint: string, body: any = {}): Promise<T> {
   try {
-    return await invoke<T>(command, args);
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    return await response.json();
   } catch (e) {
-    throw handleError(command, e);
+    throw handleError(endpoint, e);
   }
 }
