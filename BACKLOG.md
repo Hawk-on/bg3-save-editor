@@ -83,9 +83,13 @@
 - [x] **Data Research**:
   - [x] Confirm Template gold parsing (XML/LSF)
   - [x] Identify Character gold location (NewAge / ScratchBuffer binary)
-- [ ] **Core Implementation**:
-  - [ ] Implement `ScratchBuffer` parsing for character inventory
-  - [ ] Port Save/Backup logic from Rust to C#
-- [ ] **Frontend Integration**:
-  - [ ] Replace Tauri `invoke` with HTTP calls (Axios/Fetch)
-  - [ ] Update GoldEditor to use new API endpoints
+- [x] **Core Implementation**:
+  - [x] Implement `ScratchBufferParser` service for NewAge LSMF parsing
+  - [x] Integrate ScratchBuffer gold detection as fallback in `SaveService`
+  - [x] Add ECS models (`ComponentEntry`, `StackEntryData`, `HealthData`, `ExperienceData`)
+  - [x] Port Save/Backup logic from Rust to C# (already done in earlier phase)
+- [x] **Frontend Integration**:
+  - [x] Wire up Angular root component with all 4 feature components
+  - [x] Services use HTTP calls via `ApiService` to `localhost:5062`
+  - [x] Fix CORS for Angular dev server (port 4200)
+  - [x] GoldEditor, SaveInfo, SavesFolder, LslibStatus all functional

@@ -65,9 +65,21 @@ Key LSLib classes:
 
 ## Save File Flow
 
-1. **Load**: `PackageReader.Read(path)` extracts .lsv → finds `Globals.lsf` → `LSFReader` parses to `Resource` tree → `SearchNodeForGold()` traverses recursively
-2. **Modify**: `CreateBackup()` → Divine.exe extracts to temp dir → `LSFReader` reads Globals.lsf → `ModifyGoldInResource()` sets first gold item to new amount, others to 1 → `LSFWriter` writes back → Divine.exe repacks → cleanup temp
-3. **Gold items**: Look for nodes where `MapKey`/`Stats`/`ItemName` contains "Gold" or "LOOT_Gold". Amount stored in `Amount` or `StackAmount` attributes.
+1. **Load**: `PackageReader.Read(path)` extracts .lsv → finds `Globals.lsf` → `LSFReader` parses to `Resource` tree
+2. **Gold detection** (dual strategy):
+   - **Strategy 1** (legacy): `SearchNodeForGold()` traverses LSF node tree for `MapKey`/`Stats`/`ItemName` containing "Gold"
+   - **Strategy 2** (modern): `TryParseScratchBufferGold()` → `ScratchBufferParser.Parse()` reads NewAge LSMF binary blob → extracts ECS StackEntry components with quantity > 1
+3. **Modify**: `CreateBackup()` → Divine.exe extracts to temp dir → `LSFReader` reads Globals.lsf → `ModifyGoldInResource()` sets first gold item to new amount, others to 1 → `LSFWriter` writes back → Divine.exe repacks → cleanup temp
+
+### ScratchBuffer (LSMF) Format
+
+Modern BG3 saves store entity data in a binary LSMF blob inside `Globals.lsf > NewAge > NewAge` attribute:
+- 48-byte header: magic ("LSMF"), version, hash, block offset/size, component count
+- Name block: UTF-8 component name strings
+- Component entry table: 48 bytes each (name offset, hash, struct size, element count, data offset)
+- Component data: flat arrays of fixed-size structs
+
+Key components: `game.inventory.v0.StackEntry` (quantities), `game.stats.v0.HealthComponent`, `game.experience.v0.ExperienceComponent`
 
 ## Key File Locations
 

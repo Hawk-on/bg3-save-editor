@@ -94,13 +94,67 @@ public class SaveService
                 var lsfReader = new LSFReader(memStream);
                 var resource = lsfReader.Read();
 
-                // Search for gold items in the resource tree
+                // Strategy 1: Search template/item nodes for gold (legacy XML-style saves)
                 FindGoldItems(resource, state.GoldItems);
+
+                // Strategy 2: Parse NewAge ScratchBuffer for ECS gold data (modern saves)
+                if (state.GoldItems.Count == 0)
+                {
+                    Console.WriteLine("[DEBUG] No gold found in template nodes, trying ScratchBuffer...");
+                    TryParseScratchBufferGold(resource, state);
+                }
+
                 break;
             }
         }
 
         return state;
+    }
+
+    /// <summary>
+    /// Try to extract gold info from the NewAge ScratchBuffer (LSMF binary blob).
+    /// Modern BG3 saves store inventory/gold in the ECS component system.
+    /// </summary>
+    private void TryParseScratchBufferGold(Resource resource, SaveState state)
+    {
+        try
+        {
+            if (!resource.Regions.TryGetValue("NewAge", out var newAgeRegion))
+                return;
+
+            if (!newAgeRegion.Attributes.TryGetValue("NewAge", out var attr) ||
+                attr.Value is not byte[] bytes)
+                return;
+
+            Console.WriteLine($"[DEBUG] ScratchBuffer found: {bytes.Length:N0} bytes");
+
+            var parser = new ScratchBufferParser();
+            var sbData = parser.Parse(bytes);
+
+            Console.WriteLine($"[DEBUG] Parsed {sbData.Components.Count} components, {sbData.StackEntries.Count} stack entries with qty > 1");
+
+            // Stack entries with large quantities are likely gold
+            // In BG3, gold is typically the largest quantity stackable item
+            foreach (var entry in sbData.StackEntries.OrderByDescending(e => e.Quantity))
+            {
+                state.GoldItems.Add(new GoldItem
+                {
+                    Handle = $"entity_{entry.EntityIndex}",
+                    TemplateName = entry.Quantity > 100 ? "LOOT_Gold_A (ScratchBuffer)" : $"StackEntry_{entry.EntityIndex}",
+                    Amount = (int)Math.Min(entry.Quantity, int.MaxValue),
+                    Location = "NewAge ScratchBuffer"
+                });
+            }
+
+            if (state.GoldItems.Count > 0)
+            {
+                Console.WriteLine($"[DEBUG] Found {state.GoldItems.Count} potential gold entries from ScratchBuffer, total: {state.TotalGold}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG] ScratchBuffer parse failed: {ex.Message}");
+        }
     }
 
     /// <summary>

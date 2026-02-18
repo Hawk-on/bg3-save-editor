@@ -34,3 +34,64 @@ public class SaveState
     public List<GoldItem> GoldItems { get; set; } = new();
     public int TotalGold => GoldItems.Sum(g => g.Amount);
 }
+
+// ============================================================
+// ScratchBuffer / LSMF models (NewAge ECS component data)
+// ============================================================
+
+/// <summary>
+/// Parsed LSMF ScratchBuffer data from the NewAge region
+/// </summary>
+public class ScratchBufferData
+{
+    public uint Version { get; set; }
+    public long TotalSize { get; set; }
+    public int ComponentCount { get; set; }
+    public List<ComponentEntry> Components { get; set; } = new();
+    public List<StackEntryData> StackEntries { get; set; } = new();
+    public List<HealthData> HealthEntries { get; set; } = new();
+    public List<ExperienceData> ExperienceEntries { get; set; } = new();
+}
+
+/// <summary>
+/// A single ECS component type from the LSMF index
+/// </summary>
+public class ComponentEntry
+{
+    public int Index { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int StructureSize { get; set; }
+    public int Version { get; set; }
+    public long NumberOfElements { get; set; }
+    public long AbsoluteDataOffset { get; set; }
+}
+
+/// <summary>
+/// An inventory stack entry with quantity > 1
+/// </summary>
+public class StackEntryData
+{
+    public ushort EntityIndex { get; set; }
+    public uint Quantity { get; set; }
+}
+
+/// <summary>
+/// Health data for an entity
+/// </summary>
+public class HealthData
+{
+    public int EntityIndex { get; set; }
+    public int Hp { get; set; }
+    public int MaxHp { get; set; }
+}
+
+/// <summary>
+/// Experience data for an entity
+/// </summary>
+public class ExperienceData
+{
+    public int EntityIndex { get; set; }
+    public int CurrentLevelXP { get; set; }
+    public int NextLevelXP { get; set; }
+    public int TotalXP { get; set; }
+}
