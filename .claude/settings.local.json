@@ -7,7 +7,10 @@
       "Bash(npm run build:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(tee:*)",
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
