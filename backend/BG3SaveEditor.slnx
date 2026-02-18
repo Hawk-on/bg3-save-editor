@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="BG3.SaveEditor.Api/BG3.SaveEditor.Api.csproj" />
   <Project Path="BG3.SaveEditor.Core/BG3.SaveEditor.Core.csproj" />
+  <Project Path="BG3.SaveEditor.Test/BG3.SaveEditor.Test.csproj" />
 </Solution>
