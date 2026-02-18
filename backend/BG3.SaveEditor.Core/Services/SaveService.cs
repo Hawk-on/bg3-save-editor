@@ -278,14 +278,18 @@ public class SaveService
     /// </summary>
     private string GetDivinePath()
     {
-        // Look for Divine.exe in the lib folder relative to the application
+        // Look for Divine.exe in multiple locations (published layout, dev layout, etc.)
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
         var possiblePaths = new[]
         {
+            // Published self-contained: tools/ subfolder next to BG3SaveEditor.exe
+            Path.Combine(basePath, "tools", "Divine.exe"),
+            // Dev build: navigate up from bin/Debug/net8.0 to backend/lib/...
             Path.Combine(basePath, "..\\..\\..\\..\\..\\backend\\lib\\lslib\\Packed\\Tools\\Divine.exe"),
             Path.Combine(basePath, "..\\..\\..\\..\\lib\\lslib\\Packed\\Tools\\Divine.exe"),
+            // Workspace root tools/ folder
+            Path.Combine(basePath, "..\\..\\..\\..\\..\\tools\\lslib\\Packed\\Tools\\Divine.exe"),
             Path.Combine(basePath, "lib\\lslib\\Packed\\Tools\\Divine.exe"),
-            "C:\\Git\\BG3 savegame editor\\backend\\lib\\lslib\\Packed\\Tools\\Divine.exe" // Fallback absolute path
         };
 
         foreach (var path in possiblePaths)

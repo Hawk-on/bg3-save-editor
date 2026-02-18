@@ -1,13 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <ItemGroup>
-    <ProjectReference Include="..\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>BG3SaveEditor</AssemblyName>
+
+    <!-- Self-contained single-file publish settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BG3.SaveEditor.Core\BG3.SaveEditor.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Bundle Divine.exe + its runtime dependencies alongside the executable.
+       These must remain as loose files (ExcludeFromSingleFile) because Divine.exe
+       is a separate .NET process invoked at runtime. -->
+  <ItemGroup>
+    <Content Include="..\..\tools\lslib\Packed\Tools\Divine.exe" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\Divine.exe" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\Divine.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\Divine.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\Divine.runtimeconfig.json" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\Divine.runtimeconfig.json" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\CommandLineArgumentsParser.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\CommandLineArgumentsParser.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\LSLib.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\LSLib.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\LSLibNative.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\LSLibNative.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\granny2.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\granny2.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\K4os.Compression.LZ4.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\K4os.Compression.LZ4.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\K4os.Compression.LZ4.Streams.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\K4os.Compression.LZ4.Streams.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\K4os.Hash.xxHash.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\K4os.Hash.xxHash.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\ZstdSharp.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\ZstdSharp.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\Newtonsoft.Json.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\Newtonsoft.Json.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\OpenTK.Mathematics.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\OpenTK.Mathematics.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\System.IO.Hashing.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\System.IO.Hashing.dll" />
+    <Content Include="..\..\tools\lslib\Packed\Tools\LSLibStats.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\LSLibStats.dll" />
+  </ItemGroup>
 
 </Project>

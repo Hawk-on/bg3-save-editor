@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'          # Trigger on version tags like v1.0.0
+  workflow_dispatch:   # Allow manual trigger
+
+permissions:
+  contents: write      # Needed to create GitHub releases
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Setup toolchains ─────────────────────────────────────
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend-ng/package-lock.json
+
+      # ── Build Angular frontend (production) ──────────────────
+      - name: Install npm dependencies
+        working-directory: frontend-ng
+        run: npm ci
+
+      - name: Build Angular app
+        working-directory: frontend-ng
+        run: npx ng build --configuration production
+
+      # ── Copy Angular dist into API wwwroot ───────────────────
+      - name: Copy Angular output to API wwwroot
+        run: |
+          $source = "frontend-ng/dist/bg3-editor-ng/browser"
+          $dest   = "backend/BG3.SaveEditor.Api/wwwroot"
+
+          # Angular 17+ puts output in dist/<project>/browser
+          if (-not (Test-Path $source)) {
+            # Fallback: Angular <17 puts it in dist/<project>
+            $source = "frontend-ng/dist/bg3-editor-ng"
+          }
+
+          if (-not (Test-Path $source)) {
+            Write-Error "Angular build output not found!"
+            Get-ChildItem -Recurse frontend-ng/dist | Select-Object FullName
+            exit 1
+          }
+
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item -Path "$source/*" -Destination $dest -Recurse -Force
+          Write-Host "Copied Angular build to $dest"
+          Get-ChildItem $dest | Select-Object Name, Length
+
+      # ── Publish .NET self-contained ──────────────────────────
+      - name: Publish .NET backend
+        working-directory: backend
+        run: |
+          dotnet publish BG3.SaveEditor.Api/BG3.SaveEditor.Api.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o ../publish
+
+      # ── Verify publish output ────────────────────────────────
+      - name: List publish output
+        run: |
+          Write-Host "=== Publish output ==="
+          Get-ChildItem publish -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+
+      # ── Package into zip ─────────────────────────────────────
+      - name: Create release zip
+        run: |
+          $version = if ($env:GITHUB_REF -match 'refs/tags/(.+)') { $Matches[1] } else { "dev" }
+          $zipName = "BG3SaveEditor-$version-win-x64.zip"
+          Compress-Archive -Path publish/* -DestinationPath $zipName
+          Write-Host "Created $zipName ($(((Get-Item $zipName).Length / 1MB).ToString('F1')) MB)"
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+
+      # ── Upload artifact (always, for workflow_dispatch) ──────
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BG3SaveEditor-win-x64
+          path: ${{ env.ZIP_NAME }}
+          retention-days: 30
+
+      # ── Create GitHub Release (only on tag push) ─────────────
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: BG3 Save Editor ${{ env.VERSION }}
+          body: |
+            ## BG3 Save Editor ${{ env.VERSION }}
+
+            Self-contained Windows x64 executable — no .NET runtime required.
+
+            ### Quick Start
+            1. Extract the zip
+            2. Run `BG3SaveEditor.exe`
+            3. Open `http://localhost:5000` in your browser
+
+            ### What's included
+            - ASP.NET Core backend with embedded Angular UI
+            - LSLib / Divine.exe for save file operations
+            - ScratchBuffer (LSMF) parser for ECS component data
+          draft: false
+          prerelease: false
+          files: ${{ env.ZIP_NAME }}

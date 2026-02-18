@@ -40,3 +40,7 @@ backend/lib/*.zip
 
 # Debug files
 gold_debug.txt
+
+# Publish / build output
+publish/
+backend/BG3.SaveEditor.Api/wwwroot/

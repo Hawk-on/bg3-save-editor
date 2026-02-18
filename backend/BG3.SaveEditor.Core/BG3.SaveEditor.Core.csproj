@@ -34,14 +34,16 @@
     </Reference>
   </ItemGroup>
 
-  <!-- Copy native DLLs to output -->
+  <!-- Copy native DLLs to output (for local dev builds; excluded from publish to avoid conflicts) -->
   <ItemGroup>
     <None Include="..\..\tools\lslib\Packed\LSLibNative.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
       <Link>LSLibNative.dll</Link>
     </None>
     <None Include="..\..\tools\lslib\Packed\granny2.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
       <Link>granny2.dll</Link>
     </None>
   </ItemGroup>
