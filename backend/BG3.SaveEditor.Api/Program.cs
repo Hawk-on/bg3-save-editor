@@ -109,19 +109,44 @@ try
     else
     {
         // ── Desktop mode: Photino native window ──
-        // Use StartUrl property so Photino navigates when WebView2 is ready
+        // NOTE: Photino.NET 4.0.16 has an AccessViolationException bug in the
+        // native Photino_NavigateToUrl P/Invoke.  We work around it by loading
+        // an inline HTML splash that uses JavaScript to redirect the WebView2
+        // control to the Kestrel URL, bypassing the broken P/Invoke entirely.
         Log("Creating Photino window...");
-        var window = new PhotinoWindow();
-        window.SetTitle("BG3 Save Editor");
-        window.SetSize(1280, 860);
-        window.Center();
-        window.SetResizable(true);
-        window.SetDevToolsEnabled(true);
 
-        // Set the URL before WaitForClose — Photino will navigate when ready
-        window.StartUrl = url;
+        var splashHtml = $@"<!DOCTYPE html>
+<html><head><meta charset=""utf-8""><title>BG3 Save Editor</title>
+<style>
+  body {{ margin:0; background:#1a1a2e; display:flex; align-items:center;
+         justify-content:center; height:100vh; font-family:system-ui; color:#e0e0e0; }}
+  .loader {{ text-align:center; }}
+  .spinner {{ width:40px; height:40px; border:4px solid #333; border-top:4px solid #6c63ff;
+              border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 16px; }}
+  @keyframes spin {{ to {{ transform:rotate(360deg); }} }}
+</style></head>
+<body>
+  <div class=""loader"">
+    <div class=""spinner""></div>
+    <div>Loading BG3 Save Editor…</div>
+  </div>
+  <script>
+    // Wait briefly to ensure the server is fully responsive, then redirect.
+    // Using location.replace avoids adding to the WebView2 history stack.
+    setTimeout(function() {{ window.location.replace('{url}'); }}, 400);
+  </script>
+</body></html>";
 
-        Log($"Photino StartUrl set to {url}, calling WaitForClose...");
+        var window = new PhotinoWindow()
+            .SetTitle("BG3 Save Editor")
+            .SetSize(1280, 860)
+            .Center()
+            .SetResizable(true)
+            .SetDevToolsEnabled(true)
+            .SetLogVerbosity(1)
+            .LoadRawString(splashHtml);
+
+        Log("Photino window created, calling WaitForClose...");
         window.WaitForClose();
         Log("Window closed by user");
     }
