@@ -2,96 +2,142 @@ using System.Net;
 using System.Net.Sockets;
 using Photino.NET;
 
-// --no-gui flag: run as a headless server (for dev / CI)
-bool headless = args.Contains("--no-gui");
+// ── Logging (WinExe has no console, so also write to file) ──
+var exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+var logFile = Path.Combine(exeDir, "bg3editor.log");
+void Log(string msg)
+{
+    var line = $"[{DateTime.Now:HH:mm:ss.fff}] {msg}";
+    try { File.AppendAllText(logFile, line + Environment.NewLine); } catch { }
+    Console.WriteLine(line);
+}
 
-// Pick a free port (or use the fixed dev port in headless mode)
-var port = headless ? 5062 : GetAvailablePort();
-var url = $"http://localhost:{port}";
-
-// ── Build & start the ASP.NET Core server on a background thread ──
-var ready = new ManualResetEventSlim(false);
+// ── Cleanup handler: make sure server shuts down on any exit ──
 var cts = new CancellationTokenSource();
+WebApplication? webApp = null;
 
-var serverThread = new Thread(() =>
+void Shutdown()
 {
-    // Single-file exe extracts to a temp dir, but wwwroot lives next to the exe.
-    // Set content root to the exe's actual directory so static files are found.
-    var exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+    try { cts.Cancel(); } catch { }
+    try { webApp?.StopAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult(); } catch { }
+    try { cts.Dispose(); } catch { }
+    Log("Cleanup complete");
+}
 
-    var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-    {
-        Args = args,
-        ContentRootPath = exeDir,
-        WebRootPath = Path.Combine(exeDir, "wwwroot")
-    });
-    builder.Services.AddControllers();
-    builder.WebHost.UseUrls(url);
+AppDomain.CurrentDomain.ProcessExit += (_, _) => Shutdown();
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+{
+    Log($"UNHANDLED: {e.ExceptionObject}");
+    Shutdown();
+};
 
-    // CORS only needed when Angular dev server runs separately
-    builder.Services.AddCors(options =>
+try
+{
+    Log($"Starting BG3 Save Editor (exe: {exeDir})");
+
+    bool headless = args.Contains("--no-gui");
+    var port = headless ? 5062 : GetAvailablePort();
+    var url = $"http://localhost:{port}";
+    Log($"Mode: {(headless ? "headless" : "desktop")}, URL: {url}");
+
+    // ── Start ASP.NET Core server on a background thread ──
+    var ready = new ManualResetEventSlim(false);
+    Exception? serverError = null;
+
+    var serverThread = new Thread(() =>
     {
-        options.AddPolicy("Frontend", policy =>
+        try
         {
-            policy.WithOrigins(
-                    "http://localhost:4200",
-                    "http://127.0.0.1:4200"
-                  )
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                ContentRootPath = exeDir,
+                WebRootPath = Path.Combine(exeDir, "wwwroot")
+            });
+            builder.Services.AddControllers();
+            builder.WebHost.UseUrls(url);
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("Frontend", policy =>
+                    policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+                          .AllowAnyHeader().AllowAnyMethod());
+            });
+
+            webApp = builder.Build();
+            webApp.UseCors("Frontend");
+            webApp.UseDefaultFiles();
+            webApp.UseStaticFiles();
+            webApp.MapControllers();
+            webApp.MapFallbackToFile("index.html");
+
+            webApp.Lifetime.ApplicationStarted.Register(() =>
+            {
+                Log("Kestrel ready");
+                ready.Set();
+            });
+
+            webApp.RunAsync(cts.Token).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Log($"SERVER ERROR: {ex}");
+            serverError = ex;
+            ready.Set();
+        }
     });
+    serverThread.IsBackground = true;
+    serverThread.Start();
 
-    var app = builder.Build();
-    app.UseCors("Frontend");
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-    app.MapControllers();
-    app.MapFallbackToFile("index.html");
+    if (!ready.Wait(TimeSpan.FromSeconds(15)))
+    {
+        Log("Timeout waiting for Kestrel");
+        return;
+    }
+    if (serverError != null)
+    {
+        Log($"Server failed: {serverError.Message}");
+        return;
+    }
 
-    app.Lifetime.ApplicationStarted.Register(() => ready.Set());
-    app.RunAsync(cts.Token).GetAwaiter().GetResult();
-});
-serverThread.IsBackground = true;
-serverThread.Start();
+    Log($"Server listening on {url}");
 
-// Wait for Kestrel to be ready (max 10 s)
-if (!ready.Wait(TimeSpan.FromSeconds(10)))
-{
-    Console.Error.WriteLine("Server failed to start within 10 seconds.");
-    return;
+    if (headless)
+    {
+        Log("Headless mode — Ctrl+C to stop");
+        Thread.Sleep(Timeout.Infinite);
+    }
+    else
+    {
+        // ── Desktop mode: Photino native window ──
+        // Use StartUrl property so Photino navigates when WebView2 is ready
+        Log("Creating Photino window...");
+        var window = new PhotinoWindow();
+        window.SetTitle("BG3 Save Editor");
+        window.SetSize(1280, 860);
+        window.Center();
+        window.SetResizable(true);
+        window.SetDevToolsEnabled(true);
+
+        // Set the URL before WaitForClose — Photino will navigate when ready
+        window.StartUrl = url;
+
+        Log($"Photino StartUrl set to {url}, calling WaitForClose...");
+        window.WaitForClose();
+        Log("Window closed by user");
+    }
 }
-
-Console.WriteLine($"Server listening on {url}");
-
-if (headless)
+catch (Exception ex)
 {
-    // Headless mode: block until Ctrl+C
-    Console.WriteLine("Running in headless mode (--no-gui). Press Ctrl+C to stop.");
-    var exit = new ManualResetEventSlim(false);
-    Console.CancelKeyPress += (_, e) => { e.Cancel = true; exit.Set(); };
-    exit.Wait();
+    Log($"FATAL: {ex}");
 }
-else
+finally
 {
-    // ── Desktop mode: open a native webview window ──
-    var window = new PhotinoWindow()
-        .SetTitle("BG3 Save Editor")
-        .SetSize(1280, 860)
-        .Center()
-        .SetResizable(true)
-        .Load(url);
-
-    // Blocks until user closes the window
-    window.WaitForClose();
+    Shutdown();
 }
-
-// Shut down the server cleanly
-cts.Cancel();
 
 static int GetAvailablePort()
 {
-    var listener = new TcpListener(IPAddress.Loopback, 0);
+    using var listener = new TcpListener(IPAddress.Loopback, 0);
     listener.Start();
     var port = ((IPEndPoint)listener.LocalEndpoint).Port;
     listener.Stop();

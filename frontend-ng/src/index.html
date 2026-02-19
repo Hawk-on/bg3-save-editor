@@ -2,12 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Bg3EditorNg</title>
+  <title>BG3 Save Editor</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    html, body { background: #f9fafb; margin: 0; }
+    .loading-splash {
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; font-family: 'Segoe UI', sans-serif;
+      color: #6b7280; font-size: 1.2rem;
+    }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="loading-splash">Loading BG3 Save Editor…</div>
+  </app-root>
 </body>
 </html>
