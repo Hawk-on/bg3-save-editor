@@ -15,7 +15,16 @@ var cts = new CancellationTokenSource();
 
 var serverThread = new Thread(() =>
 {
-    var builder = WebApplication.CreateBuilder(args);
+    // Single-file exe extracts to a temp dir, but wwwroot lives next to the exe.
+    // Set content root to the exe's actual directory so static files are found.
+    var exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+
+    var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+    {
+        Args = args,
+        ContentRootPath = exeDir,
+        WebRootPath = Path.Combine(exeDir, "wwwroot")
+    });
     builder.Services.AddControllers();
     builder.WebHost.UseUrls(url);
 
