@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>BG3SaveEditor</AssemblyName>
+    <OutputType>WinExe</OutputType>
 
     <!-- Self-contained single-file publish settings -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -37,6 +38,9 @@
     <Content Include="..\..\tools\lslib\Packed\Tools\OpenTK.Mathematics.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\OpenTK.Mathematics.dll" />
     <Content Include="..\..\tools\lslib\Packed\Tools\System.IO.Hashing.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\System.IO.Hashing.dll" />
     <Content Include="..\..\tools\lslib\Packed\Tools\LSLibStats.dll" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="tools\LSLibStats.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Photino.NET" Version="4.0.16" />
   </ItemGroup>
 
 </Project>

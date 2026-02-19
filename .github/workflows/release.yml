@@ -121,10 +121,17 @@ jobs:
             ### Quick Start
             1. Extract the zip
             2. Run `BG3SaveEditor.exe`
-            3. Open `http://localhost:5000` in your browser
+            3. A native desktop window opens with the editor UI
+
+            **Headless mode:** Run `BG3SaveEditor.exe --no-gui` to start without a window (API on http://localhost:5062).
+
+            ### Requirements
+            - Windows 10/11 x64
+            - Microsoft Edge WebView2 Runtime (pre-installed on most machines)
 
             ### What's included
-            - ASP.NET Core backend with embedded Angular UI
+            - Native desktop app (Photino webview) with embedded Angular UI
+            - ASP.NET Core backend (self-contained, no .NET install needed)
             - LSLib / Divine.exe for save file operations
             - ScratchBuffer (LSMF) parser for ECS component data
           draft: false
